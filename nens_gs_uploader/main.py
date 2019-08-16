@@ -5,8 +5,9 @@ Created on Wed Jul 24 15:39:13 2019
 @author: chris.kerklaan - N&S
 TODOs:
     1. Op basis van ini.file ipv command line tool
-    2. Code review
+    2. Code review1
     3. Black voor formatten van scripts
+    
     
 
 """
