@@ -1,0 +1,11 @@
+[run]
+source = nens_gs_uploader
+
+[report]
+show_missing = true
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
