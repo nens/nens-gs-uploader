@@ -13,7 +13,8 @@ Connectie kan op verschillende manieren:
 2. ogr
 
 Credits voor dit script gaan naar de rastercaster:
-https://github.com/nens/threedi-turtle-scripts/blob/master/sql-scripts/rastercaster/rastercaster.py
+https://github.com/nens/threedi-turtle-scripts/blob/
+master/sql-scripts/rastercaster/rastercaster.py
 
 """
 #third-party imports

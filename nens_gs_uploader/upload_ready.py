@@ -13,7 +13,7 @@ import osr
 from tqdm import tqdm
 
 # Local imports
-from project import log_time
+from nens_gs_uploader.project import log_time
 
 #Globals
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
@@ -67,12 +67,31 @@ def correct(in_layer, layer_name):
         #lower layer_name
         layer_name = layer_name.lower()
         
+        log_time("info", "check 1 - Input geometry type")
         # Get inspatial reference and geometry from in shape
         geom_type = in_layer.GetGeomType()
         in_spatial_ref = in_layer.GetSpatialRef()
-        in_layer.ResetReading()  
         
-        log_time("info", "check 1 - Name length")
+        
+        # Create output dataset and force dataset to multiparts
+        if geom_type == 3 or  geom_type == 6:
+            geom_type = 3 # polygon
+            
+        elif geom_type == 2 or geom_type == 5 or geom_type == 0:
+            geom_type = 2 # linestring
+            
+        elif geom_type == 1 or geom_type == 4:
+            geom_type = 1 # point
+            
+        elif geom_type == 0:
+            geom_type = input("Geom type is 0, enter type number")
+        
+        else:
+            log_time("error", "geometry invalid, most likely has a z-type")
+            print("geom type", geom_type, ogr.GeometryTypeToName(geom_type))
+            raise ValueError("geometry invalid, most likely has a z-type")
+        
+        log_time("info", "check 2 - Name length")
         if len(layer_name) + 10 > 64:
             log_time("error","laagnaam te lang, 50 characters max.")
             raise NameError("laagnaam te lang, 50 characters max.")
@@ -87,7 +106,7 @@ def correct(in_layer, layer_name):
             field_defn = layer_defn.GetFieldDefn(i)
             mem_layer.CreateField(field_defn)
          
-        log_time("info", "check 2 - Multipart to singlepart")                 
+        log_time("info", "check 3 - Multipart to singlepart")                 
         multipoly2poly(in_layer, mem_layer)
         
         if mem_layer.GetFeatureCount() == 0:
@@ -99,19 +118,7 @@ def correct(in_layer, layer_name):
         reproject = osr.CoordinateTransformation(in_spatial_ref, 
                                                  spatial_ref_3857)
         
-        if geom_type < 1:
-            log_time("error", "geometry invalid, most likely has a z-type")
-            raise ValueError("geometry invalid, most likely has a z-type")
-        
-        # Create output dataset and force dataset to multiparts
-        if geom_type == 3 or  geom_type == 6:
-            geom_type = 3 # polygon
-            
-        elif geom_type == 2 or geom_type == 5:
-            geom_type = 2 # linestring
-            
-        elif geom_type == 1 or geom_type == 4:
-            geom_type = 1 # point
+
             
         out_datasource = DRIVER_OGR_MEM.CreateDataSource("mem2")
         out_layer = out_datasource.CreateLayer(layer_name, 
@@ -123,7 +130,7 @@ def correct(in_layer, layer_name):
         for i in range(layer_defn.GetFieldCount()):
             out_layer.CreateField(layer_defn.GetFieldDefn(i))
 
-        log_time("info", "check 3 - Reproject layer to 3857")
+        log_time("info", "check 4 - Reproject layer to 3857")
         for out_feat in tqdm(mem_layer):
             out_geom = out_feat.GetGeometryRef()
             
@@ -140,7 +147,7 @@ def correct(in_layer, layer_name):
             out_feat.SetGeometry(out_geom)
             out_layer.CreateFeature(out_feat)
         
-        log_time("info", "check 4 - delete ogc_fid if exists")
+        log_time("info", "check 5 - delete ogc_fid if exists")
         out_layer_defn = out_layer.GetLayerDefn()
         for n in range(out_layer_defn.GetFieldCount()):
             field = out_layer_defn.GetFieldDefn(n)

@@ -12,7 +12,7 @@ import osr
 import ogr
     
 # Local imports
-from pyconnectsql import connect2pg
+from nens_gs_uploader.pyconnectsql import connect2pg
 
 ## 
 sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
@@ -45,11 +45,6 @@ PG_DATABASE = {
     "PROJECTEN_KLIMAATATLAS": pg_project_atlas,
     "PROJECTEN_LIZARD": pg_project_lizard
     }
-
-# Test Arguments
-#in_layer = "u0125_begwegen_haarlemmermeer"
-#out_layer = "test"
-
 
 def connect2pg_database(database):
     """ Returns connection to a postgresdatabase. """

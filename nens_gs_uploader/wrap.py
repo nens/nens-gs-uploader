@@ -4,6 +4,11 @@ Created on Mon Jul 22 21:39:39 2019
 
 @author: chris.kerklaan - N&S
 """
+# System imports
+import sys
+
+# Set path
+sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
 
 #Third-party imports
 import csv
@@ -12,8 +17,8 @@ from geoserver.util import shapefile_and_friends
 from tqdm import tqdm
 
 #local imports
-from localsecret import username, password
-from postgis import SERVERS
+from sql_base.localsecret import username, password
+from nens_gs_uploader.postgis import SERVERS
 
 class wrap_geoserver:
     """ Geoserver (gsconfig) wrapper """

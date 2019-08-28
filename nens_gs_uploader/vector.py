@@ -13,7 +13,7 @@ import ogr
 import gdal
 
 # Local imports
-from postgis import connect2pg_database
+from nens_gs_uploader.postgis import connect2pg_database
 
 # Global DRIVERS
 DRIVER_GDAL_MEM = gdal.GetDriverByName('MEM')
