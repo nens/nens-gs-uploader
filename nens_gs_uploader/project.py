@@ -18,13 +18,13 @@ time_last_print_large = datetime.datetime.now()
 def log_time(log_type, s1="", s2="", size="s"):
     print_time(s1=s1, s2=s2, size=size)
 
-    if log_type is "info":
+    if log_type == "info":
         logging.info("%s - %s", s1, s2)
-    elif log_type is "debug":
+    elif log_type == "debug":
         logging.debug("%s - %s", s1, s2)
-    elif log_type is "warning":
+    elif log_type == "warning":
         logging.warning("%s - %s", s1, s2)
-    elif log_type is "error":
+    elif log_type == "error":
         logging.error("%s - %s", s1, s2)
     else:
         print("no log")

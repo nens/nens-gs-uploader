@@ -13,9 +13,9 @@ from xml.dom import minidom
 class wrap_sld:
     def __init__(self, sld_path, _type="path"):
 
-        if _type is "path":
+        if _type == "path":
             self.root_copy = self.copy_root(minidom.parse(sld_path))
-        elif _type is "body":
+        elif _type == "body":
             self.root_copy = self.copy_root(minidom.parseString(sld_path))
         else:
             pass
@@ -30,7 +30,7 @@ class wrap_sld:
         return self.property_names
 
     def _type(self):
-        if len(self.get_all_property_names()) is 0:
+        if len(self.get_all_property_names()) == 0:
             return ["single", "sld11"]  # with se
         else:
             return ["category", "sld10"]  # without se
@@ -82,7 +82,7 @@ def percentage_match(shape_field_name, sld_field_name):
         if letter1 == letter2:
             match_count = match_count + 1
 
-    if match_count is 0:
+    if match_count == 0:
         match_count = -1
 
     return match_count / total

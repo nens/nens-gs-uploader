@@ -54,7 +54,7 @@ class connect2pg:
             except:
                 print("I am unable to connect to the database")
                 print(ogr_conn)
-        elif connection is "string":
+        elif connection == "string":
             pass
         else:
             print("connection paramater not properly selected")
