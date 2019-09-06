@@ -3,18 +3,31 @@ nens-gs-uploader
 
 Introduction
 
-Usage, etc.
+De nens-gs-uploader kan gebruikt worden voor het snel uploaden van grote hoeveelheden aan shapefiles.
+Dit script met gebruik van python 3.
 
 
 Installation
 ------------
 
-We can be installed with::
+De nens-gs-uploader kan op dit moment alleen geïnstalleerd worden door de bestanden te downloaden vanaf deze github pagina.
+In de toekomst kan dit met een pip install::
 
   $ pip install nens-gs-uploader
+   
+Quick start
+-----------
 
-(TODO: after the first release has been made)
-
+*Wanneer geen pip install nens_gs_uploader is gebruikt moet je het volgende command runnen:
+ $ pip install --user -r nens_gs_uploader/data/requirements.txt
+ Deze installeert de benodigde libraries in het script.
+    
+*Maak een kopie van "instellingen_voorbeeld.ini" voor de specifieke shapes die je wilt uploaden.
+*Vul localsecret.py in met de gegevens van de server en inloggegevens van de geoservers. 
+ Vraag aan Chris als of je deze kan krijgen als je ze nog niet hebt.
+*Run het script met het volgende command:
+ $ python nens_gs_uploader.py pad_naar_inifile/inifile.ini
+ 
 
 Development installation of this project itself
 -----------------------------------------------
@@ -57,26 +70,3 @@ dependency::
   $ pipenv install --dev
 
 
-Steps to do after generating with cookiecutter
-----------------------------------------------
-
-- Add a new project on https://github.com/nens/ with the same name. Set
-  visibility to "public" and do not generate a license or readme.
-
-  Note: "public" means "don't put customer data or sample data with real
-  persons' addresses on github"!
-
-- Follow the steps you then see (from "git init" to "git push origin master")
-  and your code will be online.
-
-- Go to
-  https://github.com/nens/nens-gs-uploader/settings/collaboration
-  and add the teams with write access (you might have to ask someone with
-  admin rights to do it).
-
-- Update this readme. Use `.rst
-  <http://www.sphinx-doc.org/en/stable/rest.html>`_ as the format.
-
-- Ask Reinout to configure travis and coveralls.
-
-- Remove this section as you've done it all :-)
