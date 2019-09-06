@@ -27,8 +27,6 @@ setup(
     tests_require=tests_require,
     extras_require={"test": tests_require},
     entry_points={
-        "console_scripts": [
-            "run-nens-gs-uploader = nens_gs_uploader.scripts:main"
-        ]
+        "console_scripts": ["run-nens-gs-uploader = nens_gs_uploader.scripts:main"]
     },
 )
