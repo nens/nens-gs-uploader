@@ -48,10 +48,6 @@ from nens_gs_uploader.sld                 import wrap_sld
 from nens_gs_uploader.sld                 import replace_sld_field_based_on_shape
 from nens_gs_uploader.upload_ready        import correct
 
-
-# Logging directory
-
-
 # Globals  
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
@@ -134,6 +130,7 @@ class settings_object(object):
                 vector_out.append(layer[1])
             else:
                 pass
+            
         return vector_in, vector_out
     
     def postgis_sld_generator(self):
@@ -145,7 +142,8 @@ def add_output_settings(setting, onderwerp, in_path):
     """ Returns geoserver settings in an organized manner"""
     
     workspace_name = setting.organisatie + "_" + setting.product_naam
-    store_name = PG_DATABASE[setting.server_naam]["database"]
+    store_name = (setting.project_nummer.lower() + "_" +
+                  PG_DATABASE[setting.server_naam]["database"])
     
     # Products
     if setting.product_naam == "klimaatatlas":
