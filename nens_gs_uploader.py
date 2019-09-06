@@ -303,7 +303,7 @@ def upload(setting):
     shape = wrap_shape(datasource)
     setting.layer_name = layer_name
 
-    if shape.layer.GetFeatureCount() is 0:
+    if shape.layer.GetFeatureCount() == 0:
         log_time("error", setting.layer_name, "Shape feature count is 0")
 
     log_time("info", setting.layer_name, "2. Upload shape to pg database.")
@@ -345,7 +345,7 @@ def upload(setting):
     sld.lower_all_property_names()
 
     if setting.check_sld:
-        if sld._type() is "category":
+        if sld._type() == "category":
             for sld_field_name in sld.get_all_property_names():
                 if not sld_field_name in pg_database.get_all_field_names():
                     replace_sld_field_based_on_shape(pg_database, sld, sld_field_name)
