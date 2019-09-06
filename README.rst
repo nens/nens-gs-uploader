@@ -18,15 +18,15 @@ In de toekomst kan dit met een pip install::
 Quick start
 -----------
 
-*Wanneer geen pip install nens_gs_uploader is gebruikt moet je het volgende command runnen:
- $ pip install --user -r nens_gs_uploader/data/requirements.txt
- Deze installeert de benodigde libraries in het script.
+* Wanneer geen pip install nens_gs_uploader is gebruikt moet je het volgende command runnen:
+  $ pip install --user -r nens_gs_uploader/data/requirements.txt
+  Deze installeert de benodigde libraries in het script.
     
-*Maak een kopie van "instellingen_voorbeeld.ini" voor de specifieke shapes die je wilt uploaden.
-*Vul localsecret.py in met de gegevens van de server en inloggegevens van de geoservers. 
- Vraag aan Chris als of je deze kan krijgen als je ze nog niet hebt.
-*Run het script met het volgende command:
- $ python nens_gs_uploader.py pad_naar_inifile/inifile.ini
+* Maak een kopie van "instellingen_voorbeeld.ini" voor de specifieke shapes die je wilt uploaden.
+* Vul localsecret.py in met de gegevens van de server en inloggegevens van de geoservers. 
+  Vraag aan Chris als of je deze kan krijgen als je ze nog niet hebt.
+* Run het script met het volgende command:
+  $ python nens_gs_uploader.py pad_naar_inifile/inifile.ini
  
 
 Development installation of this project itself
