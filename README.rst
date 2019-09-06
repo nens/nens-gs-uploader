@@ -3,7 +3,7 @@ nens-gs-uploader
 
 Introduction
 
-De nens-gs-uploader kan gebruikt worden voor het snel uploaden van grote hoeveelheden aan shapefiles.
+De nens-gs-uploader kan gebruikt worden voor het snel uploaden van grote hoeveelheden aan shapefiles naar de Geoservers gebruikt door N&S.
 Dit script met gebruik van python 3.
 
 
