@@ -4,9 +4,6 @@ Created on Mon Jul 15 18:30:37 2019
 
 @author: chris.kerklaan - N&S
 """
-# Sytem imports
-import sys
-
 # Third-party imports
 import osr
 import ogr
@@ -14,6 +11,7 @@ import ogr
 # Local imports
 from nens_gs_uploader.pyconnectsql import connect2pg
 
+<<<<<<< Updated upstream
 ##
 sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
 from sql_base.localsecret import (
@@ -24,6 +22,17 @@ from sql_base.localsecret import (
     project_lizard as pg_project_atlas,
     production_klimaatatlas_v1 as pg_atlas_v1,
 )
+=======
+## 
+from nens_gs_uploader.localsecret import (
+        production_klimaatatlas     as pg_atlas,
+        staging                     as pg_staging,
+        production_lizard           as pg_lizard,
+        project_klimaatatlas        as pg_project_lizard,
+        project_lizard              as pg_project_atlas,
+        production_klimaatatlas_v1  as pg_atlas_v1        
+        )
+>>>>>>> Stashed changes
 
 # Exceptions
 ogr.UseExceptions()
