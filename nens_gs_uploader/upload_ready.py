@@ -13,7 +13,7 @@ import osr
 from tqdm import tqdm
 
 # Local imports
-from project import log_time
+from nens_gs_uploader.project import log_time
 
 # Globals
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
@@ -46,7 +46,8 @@ def multipoly2poly(in_layer, out_layer):
             log_time("warning", "FID {} has no geometry.".format(count))
             continue
 
-        if geom.GetGeometryName() == "MULTIPOLYGON":
+        if (geom.GetGeometryName() == "MULTIPOLYGON" or 
+            geom.GetGeometryName() == "MULTILINESTRING"):
             for geom_part in geom:
                 addPolygon(geom_part.ExportToWkb(), content, out_layer)
         else:
@@ -104,10 +105,14 @@ def correct(in_layer, layer_name):
             in_spatial_ref, spatial_ref_3857
         )
 
-        if geom_type < 1:
+        if geom_type < 0:
             log_time("error", "geometry invalid, most likely has a z-type")
-            raise ValueError("geometry invalid, most likely has a z-type")
-
+            raise ValueError(
+                "geometry invalid, most likely has a z-type",
+                "geom type: ",
+                ogr.GeometryTypeToName(geom_type),
+            )
+            
         # Create output dataset and force dataset to multiparts
         if geom_type == 3 or geom_type == 6:
             geom_type = 3  # polygon
@@ -123,6 +128,7 @@ def correct(in_layer, layer_name):
             layer_name, spatial_ref_3857, geom_type
         )
         layer_defn = in_layer.GetLayerDefn()
+        
 
         # Copy fields from memory layer to output dataset
         for i in range(layer_defn.GetFieldCount()):

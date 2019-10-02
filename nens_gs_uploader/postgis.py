@@ -7,12 +7,11 @@ Created on Mon Jul 15 18:30:37 2019
 # Third-party imports
 import osr
 import ogr
+import gdal
 
 # Local imports
-from pyconnectsql import connect2pg
-
-##
-from nens_gs_uploader.localsecret import (
+from nens_gs_uploader.pyconnectsql import connect2pg
+from nens_gs_uploader.localsecret.localsecret import (
     production_klimaatatlas as pg_atlas,
     staging as pg_staging,
     production_lizard as pg_lizard,
@@ -23,6 +22,9 @@ from nens_gs_uploader.localsecret import (
 
 # Exceptions
 ogr.UseExceptions()
+
+# Progress bar
+progress = gdal.TermProgress_nocb
 
 # Global within script
 SERVERS = {
@@ -41,10 +43,6 @@ PG_DATABASE = {
     "PROJECTEN_KLIMAATATLAS": pg_project_atlas,
     "PROJECTEN_LIZARD": pg_project_lizard,
 }
-
-# Test Arguments
-# in_layer = "u0125_begwegen_haarlemmermeer"
-# out_layer = "test"
 
 
 def connect2pg_database(database):
@@ -71,8 +69,6 @@ def copy2pg_database(database, in_layer, layer_name):
                 "FID=ogc_fid",
             ],
         )
-        if out_layer.GetFeatureCount() == 0:
-            raise ValueError("Postgres vector feature count is 0")
 
     except Exception as e:
         print(e)
@@ -88,6 +84,7 @@ def copy2pg_database(database, in_layer, layer_name):
             layer_name, srs, geom_type, ["OVERWRITE=YES"]
         )
         out_layer.StartTransaction()
+
         # define all fields
         in_layer_defn = in_layer.GetLayerDefn()
         for i in range(in_layer_defn.GetFieldCount()):

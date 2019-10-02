@@ -86,10 +86,10 @@ def print_list(_list, subject):
 
     print("\n {}:".format(subject))
     for path in _list:
-        print("\t{}".format(str(path)))
+        print("\t\t{}".format(str(path)))
 
 
 def print_dictionary(_dict, subject):
     print("\n {}:".format(subject))
     for key, value in _dict.items():
-        print("\t{}:\t\t{}".format(str(key), str(value)))
+        print("\t{}:\t\t\t\t{}".format(str(key), str(value)))

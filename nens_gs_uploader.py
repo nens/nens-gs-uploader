@@ -6,13 +6,9 @@ Created on Wed Jul 24 15:39:13 2019
 
 TODOs:
     1. Code review
-    2. Black voor formatten van scripts
-    3. Extra checks op shapefiles 
-    4. Add systematics for project
-    5. Standaard sld's 
-    6. Check slds werken nog niet goed
-    
-    
+    2. Extra checks op shapefiles 
+    3. Check slds werken nog niet goed
+    4. 3D dimensions 
 """
 # system imports
 import os
@@ -62,6 +58,7 @@ gdal.UseExceptions()
 
 # GDAL configuration options
 gdal.SetConfigOption("CPL_DEBUG", "ON")
+gdal.SetConfigOption("CPL_ERROR", "ON")
 gdal.SetConfigOption("CPL_CURL_VERBOSE", "ON")
 
 # Logging configuration options
@@ -79,11 +76,26 @@ def get_parser():
 
 
 def get_subject_from_path(path):
-    return path.split("\\")[-1].split(".shp")[0]
+    return os.path.basename(path).split(".")[0]
 
 
 def get_standard_sld(sld_name):
     return os.path.join(SLD_PATH, sld_name + ".sld")
+
+def get_paths_and_subjects(setting, source):
+    
+    if source == 'directory':
+        in_paths = glob(setting.directory + "/*.shp")
+        in_paths = in_paths + glob(setting.directory + "/*.gpkg")
+
+        subjects = [get_subject_from_path(in_path) for in_path in in_paths]
+    elif source == 'postgis':
+        in_paths = setting.config.sections()[5:]
+        subjects = setting.get_postgis_subjects()
+    else:
+        print('choose source')
+        
+    return in_paths, subjects
 
 
 def set_log_config(location, name="log"):
@@ -108,33 +120,39 @@ class settings_object(object):
             self.ini_location = os.path.dirname(ini_file)
             self.config = config
 
-            for section in config.sections():
-                for key, value in config.items(section):
-                    if value == "True":
-                        value = True
-                    elif value == "False":
-                        value = False
-                    else:
-                        pass
-
-                    setattr(self, key, value)
+            self.set_project()
 
     def add(self, key, value):
         setattr(self, key, value)
 
-    def get_postgis_batchlayers(self):
-        vector_in = []
-        vector_out = []
+    def get_postgis_subjects(self):
+        subjects = []
+        for section in self.config.sections()[5:]:
+            for i in self.config.items(section):
+                if i[0] == "out_layer":
+                    subjects.append(i[1])
 
-        for layer in self.config.items("input_postgis"):
-            if "in_layer" in layer[0]:
-                vector_in.append(layer[1])
-            elif "out_layer" in layer[0]:
-                vector_out.append(layer[1])
+        return subjects
+
+    def set_project(self):
+        self.set_values("project")
+        self.set_values("input_directory")
+        self.set_values("tool")
+        self.set_values("input_styling")
+        self.set_values("input_postgis")
+
+    def set_values(self, section):
+        for key in self.config[section]:
+            value = self.config[section][key]
+            if value == "True":
+                value = True
+            elif value == "False":
+                value = False
             else:
                 pass
 
-        return vector_in, vector_out
+            self.key = value
+            setattr(self, key, value)
 
     def postgis_sld_generator(self):
         for layer in self.config.items("input_postgis"):
@@ -174,12 +192,23 @@ def add_output_settings(setting, onderwerp, in_path):
         """.format(
             omschrijving=onderwerp.lower(), bron=setting.organisatie.lower()
         )
+        
+    elif setting.product_naam == "storymap":
+        layer_name = "{}_{}_{}".format(
+            setting.organisatie, onderwerp, setting.einddatum
+        )
+        abstract_data = """ Deze laag is afkomsting van de storymap van
+        {bron}.
+        """.format(
+            omschrijving=onderwerp.lower(), bron=setting.organisatie.lower()
+        )
     else:
         print("Choose a correct product name")
 
     # Source inputs
-    if setting.use_postgis:
-        # Datasource
+    if setting.use_postgis and not os.path.isfile(in_path):
+        
+        setting.set_values(in_path)
         setting.in_datasource = {
             "host": setting.host,
             "port": setting.port,
@@ -187,36 +216,31 @@ def add_output_settings(setting, onderwerp, in_path):
             "username": setting.username,
             "password": setting.password,
         }
-        # Layer
         setting.in_layer = in_path
 
-        # Postgis single sld.
-        if setting.use_single_sld:
-            setting.in_sld_path = setting.postgis_sld_path
+    elif setting.use_directory and os.path.isfile(in_path):
 
-        elif setting.use_batch_sld:
-            setting.in_sld_path = setting.postgis_sld_generator()
-
-        elif not setting.use_standard_sld:
-            print("Choose 'use_single_sld', 'use_batch', 'use_standard_sld'")
-
-        else:
-            pass
-
-    elif setting.use_shape:
-        # Datasource
         setting.in_datasource = in_path
-
-        # Layer
         setting.in_layer = None
-
-        # Styling
-        setting.in_sld_path = in_path.replace(".shp", ".sld")
+        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1],
+                                              ".sld")
+        setting.skip = False
 
     else:
         print("use either use_postgis or use_batch")
 
-    # General stuff
+    # Overwrite sld path if standard sld is used
+    if setting.use_standard_sld:
+        styles = [
+            "begaanbaarheid_wegen",
+            "kwetsbaarheid_panden",
+            "kwetsbare_objecten",
+            "regenwaterstructuur"
+        ]
+        list_style = [style for style in styles if style in onderwerp]
+        setting.in_sld_path = get_standard_sld(list_style[0])
+
+    # Set metadata
     metadata = {
         "pg_layer": layer_name,
         "gs_workspace": workspace_name,
@@ -226,16 +250,6 @@ def add_output_settings(setting, onderwerp, in_path):
         "projectnummer": setting.project_nummer.lower(),
         "einddatum": setting.einddatum,
     }
-
-    # Overwrite sld path
-    if setting.use_standard_sld:
-        styles = [
-            "begaanbaarheid_wegen",
-            "kwetsbaarheid_panden",
-            "kwetsbare_objecten",
-        ]
-        list_style = [style for style in styles if style in onderwerp]
-        setting.in_sld_path = get_standard_sld(list_style[0])
 
     # Overwrite all
     if setting.overwrite_all:
@@ -263,14 +277,22 @@ def batch_upload(inifile):
     set_log_config(setting.ini_location)
     sys.stdout = logger(setting.ini_location)
 
-    # get vectors
-    if setting.use_shape:
-        in_paths = glob(setting.directory + "/*.shp")
-        subjects = [get_subject_from_path(in_path) for in_path in in_paths]
+    # get vectors 
+    if setting.use_directory:
+        in_paths, subjects = get_paths_and_subjects(setting, 'directory')
 
     elif setting.use_postgis:
-        in_paths, subjects = setting.get_postgis_batchlayers()
+        in_paths, subjects = get_paths_and_subjects(setting, 'postgis')
+        
+              
+    elif setting.use_directory and setting.use_postgis:
+        in_paths, subjects = get_paths_and_subjects(setting, 'directory')
+        pg_in_paths, pg_subjects = get_paths_and_subjects(setting, 'postgis')
 
+        in_paths = in_paths + pg_in_paths
+        subjects = subjects + pg_subjects
+        
+        
     else:
         print("use either use_postgis or use_batch")
 
@@ -285,20 +307,23 @@ def batch_upload(inifile):
         # set last settings
         setting.server = wrap_geoserver(setting.server_naam)
         setting = add_output_settings(setting, subject, in_path)
+        
+        if not setting.skip:
 
-        try:
-            succes[setting.subject] = upload(setting)
+#            try:
+                succes[setting.subject] = upload(setting)
 
-        except Exception as e:
-            print(e)
-            failures[setting.subject] = e
+#            except Exception as e:
+#                print(e)
+#                failures[setting.subject] = e
 
-        log_time("info", "sleeping to decrease load on server....")
-        sleep(30)
+        
+        if not setting.skip:
+            log_time("info", "sleeping to decrease load on server....")
+            sleep(30)
 
     print_dictionary(succes, "Succes")
     print_dictionary(failures, "Failures")
-
 
 def upload(setting):
     log_time("info", setting.layer_name, "0. starting.....")
@@ -310,7 +335,7 @@ def upload(setting):
     setting.layer_name = layer_name
 
     if shape.layer.GetFeatureCount() == 0:
-        log_time("error", setting.layer_name, "Shape feature count is 0")
+        log_time("error", setting.layer_name, "vector feature count is 0")
 
     log_time("info", setting.layer_name, "2. Upload shape to pg database.")
     pg_details = PG_DATABASE[setting.server_naam]
@@ -375,7 +400,7 @@ def upload(setting):
         server.write_abstract(setting.abstract_data)
 
     log_time("info", setting.layer_name, "11. Returning wms, slug")
-    wms = SERVERS[setting.server_naam].replace("rest", "wms")
+    wms = SERVERS[setting.server_naam].replace("rest", "{}/wms".format(setting.workspace_name))
     slug = "{}:{}".format(setting.workspace_name, setting.layer_name)
 
     return wms, slug

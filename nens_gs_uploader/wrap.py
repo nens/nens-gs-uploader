@@ -12,8 +12,8 @@ from geoserver.util import shapefile_and_friends
 from tqdm import tqdm
 
 # local imports
-from localsecret import username, password
-from postgis import SERVERS
+from nens_gs_uploader.localsecret.localsecret import username, password
+from nens_gs_uploader.postgis import SERVERS
 
 
 class wrap_geoserver:
