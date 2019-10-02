@@ -162,19 +162,30 @@ class settings_object(object):
 
 def add_output_settings(setting, onderwerp, in_path):
     """ Returns geoserver settings in an organized manner"""
+    """conform https://sites.google.com/nelen-schuurmans.nl/handleiding-klimaatatlas/data-protocol"""
 
-    workspace_name = setting.organisatie + "_" + setting.product_naam
-    store_name = (
-        setting.project_nummer.lower()
-        + "_"
-        + PG_DATABASE[setting.server_naam]["database"]
-    )
-
-    # Products
-    if setting.product_naam == "klimaatatlas":
+    # layer names, workspace names en server names
+    if "PRODUCTIE" in setting.server_naam:
         layer_name = "{}_{}_{}".format(
             setting.bo_nummer, setting.organisatie, onderwerp
         )
+        workspace_name = setting.organisatie + "_" + setting.product_naam
+        
+    elif "PROJECTEN" in setting.server_naam:
+        layer_name = "{}_{}_{}_{}".format(
+            setting.project_nummer.lower(), setting.organisatie, onderwerp, setting.einddatum
+        )
+        workspace_name = "p_{}_{}".format(setting.organisatie, setting.product_naam)
+        
+    else:
+        raise ValueError("servernaam fout")
+
+    store_name = setting.project_nummer.lower() + "_" + PG_DATABASE[setting.server_naam]["database"]
+        
+
+    # abstracts
+    if setting.product_naam == "klimaatatlas" :
+
         abstract_data = """
         De laag {omschrijving} komt van {bron}. Voor meer informatie over 
         deze laag, ga naar de klimaatatlas www.{bron}.klimaatatlas.net. 
@@ -183,9 +194,6 @@ def add_output_settings(setting, onderwerp, in_path):
         )
 
     elif setting.product_naam == "dashboard":
-        layer_name = "{}_{}_{}".format(
-            setting.organisatie, onderwerp, setting.einddatum
-        )
         abstract_data = """
         De laag {omschrijving} komt van {bron}. Voor meer informatie over 
         deze laag, ga naar het dashboard. 
@@ -194,16 +202,13 @@ def add_output_settings(setting, onderwerp, in_path):
         )
         
     elif setting.product_naam == "storymap":
-        layer_name = "{}_{}_{}".format(
-            setting.organisatie, onderwerp, setting.einddatum
-        )
         abstract_data = """ Deze laag is afkomsting van de storymap van
         {bron}.
         """.format(
             omschrijving=onderwerp.lower(), bron=setting.organisatie.lower()
         )
     else:
-        print("Choose a correct product name")
+        raise ValueError("productnaam fout")
 
     # Source inputs
     if setting.use_postgis and not os.path.isfile(in_path):
@@ -222,8 +227,7 @@ def add_output_settings(setting, onderwerp, in_path):
 
         setting.in_datasource = in_path
         setting.in_layer = None
-        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1],
-                                              ".sld")
+        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1], ".sld")
         setting.skip = False
 
     else:
