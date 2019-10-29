@@ -80,7 +80,10 @@ def correct(in_layer, layer_name):
         log_time("info", "check 1 - Name length")
         if len(layer_name) + 10 > 64:
             log_time("error", "laagnaam te lang, 50 characters max.")
-            raise NameError("laagnaam te lang, 50 characters max.")
+            log_time("info", "formatting naar 50.")
+            layer_name = layer_name[:50]
+            #raise NameError("laagnaam te lang, 50 characters max.")
+            
 
         mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem")
         mem_layer = mem_datasource.CreateLayer(
@@ -99,13 +102,20 @@ def correct(in_layer, layer_name):
             log_time("error", "Multipart to singlepart failed")
             raise ValueError("Multipart to singlepart failed")
 
+        print('Spatial reference', in_spatial_ref.GetName() ) 
         spatial_ref_3857 = osr.SpatialReference()
         spatial_ref_3857.ImportFromEPSG(3857)
         reproject = osr.CoordinateTransformation(
             in_spatial_ref, spatial_ref_3857
         )
-
-        if geom_type < 0:
+        
+        flatten = False
+        if ogr.GeometryTypeToName(geom_type) == '3D Multi Polygon':
+            log_time("warning", "geom type: " + ogr.GeometryTypeToName(geom_type))
+            log_time("info", "Flattening to 2D")
+            flatten = True
+            
+        elif geom_type < 0:
             log_time("error", "geometry invalid, most likely has a z-type")
             raise ValueError(
                 "geometry invalid, most likely has a z-type",
@@ -137,6 +147,7 @@ def correct(in_layer, layer_name):
         log_time("info", "check 3 - Reproject layer to 3857")
         for out_feat in tqdm(mem_layer):
             out_geom = out_feat.GetGeometryRef()
+            
 
             # validity check
             if not out_geom.IsValid():
@@ -146,6 +157,10 @@ def correct(in_layer, layer_name):
             # Force and transform geometry
             out_geom = ogr.ForceTo(out_geom, geom_type)
             out_geom.Transform(reproject)
+
+            # flattening to 2d
+            if flatten:
+                out_geom.FlattenTo2D()
 
             # Set geometry and create feature
             out_feat.SetGeometry(out_geom)
@@ -172,9 +187,9 @@ def correct(in_layer, layer_name):
 
 if __name__ == "__main__":
     in_datasource = ogr.Open(
-        "C:/Users/chris.kerklaan/Documents/Projecten/hltsamen/vector/beweegbare_bruggen.shp"
+        "C:/Users/chris.kerklaan/Documents\Projecten/HHNK_klimaatatlas/temp/nwm_mediaan_peilgebied_ghg_2050.gpkg"
     )
     in_layer = in_datasource[0]
     layer_name = "beweegbare_bruggen"
-    out_layer = correct(in_layer, layer_name)
+    out_datasource, out_layer = correct(in_layer, layer_name)
     out_layer.GetFeatureCount()
