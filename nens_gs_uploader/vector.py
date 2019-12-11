@@ -199,33 +199,34 @@ class wrap_shape(object):
         out_feat = ogr.Feature(featureDefn)
         out_feat.SetGeometry(polygon)
         out_lyr.CreateFeature(out_feat)
-        
+
+
 def vector_clip(in_layer, clip_geom):
     out_datasource = DRIVER_OGR_MEM.CreateDataSource("temp")
-    out_layer = out_datasource.CreateLayer("temp", 
-                                           in_layer.GetSpatialRef(),
-                                           in_layer.GetGeomType())
+    out_layer = out_datasource.CreateLayer(
+        "temp", in_layer.GetSpatialRef(), in_layer.GetGeomType()
+    )
 
     in_layer_defn = in_layer.GetLayerDefn()
-    
+
     in_layer.SetSpatialFilter(clip_geom)
-     
+
     # Copy fields from memory layer to output dataset
     for i in range(in_layer_defn.GetFieldCount()):
         out_layer.CreateField(in_layer_defn.GetFieldDefn(i))
 
-    print('start masking')
+    print("start masking")
     for out_feat in tqdm(in_layer):
         out_geom = out_feat.geometry()
-        
+
         # no self intersection
         out_geom = out_geom.Buffer(0)
 
         if out_geom.Intersects(clip_geom.Boundary()):
             intersect = out_geom.Intersection(clip_geom)
-            intersect_type = intersect.GetGeometryType() 
-            
-            if intersect_type > 3 or intersect_type < 0: # multiparts
+            intersect_type = intersect.GetGeometryType()
+
+            if intersect_type > 3 or intersect_type < 0:  # multiparts
                 for geom_part in intersect:
                     if not geom_part.IsValid():
                         print("skipping invalid part")
@@ -233,28 +234,29 @@ def vector_clip(in_layer, clip_geom):
 
                     out_feat.SetGeometry(geom_part)
                     out_layer.CreateFeature(out_feat)
-                    
+
             else:
                 out_feat.SetGeometry(intersect)
                 out_layer.CreateFeature(out_feat)
-                
+
         elif out_geom.Within(clip_geom):
             out_feat.SetGeometry(out_geom)
             out_layer.CreateFeature(out_feat)
-           
+
         else:
             pass
-    in_layer  = None
+    in_layer = None
     out_layer = None
-    
+
     return out_datasource
+
 
 def vector_to_geom(vector_path):
     vector_ds = ogr.Open(vector_path)
     vector_layer = vector_ds[0]
-    
+
     # reproject
-    out_datasource, layer_name = correct(vector_layer, 'Dummy')
+    out_datasource, layer_name = correct(vector_layer, "Dummy")
     out_layer = out_datasource[0]
 
     # dissolve
@@ -263,33 +265,37 @@ def vector_to_geom(vector_path):
         for feat in out_layer:
             out_geom = feat.geometry()
             union_poly = union_poly.Union(out_geom)
-            
+
         # remove self intersections
         union_poly = union_poly.Buffer(0)
-        
+
     else:
-        out_feat =  out_layer[0]
+        out_feat = out_layer[0]
         union_poly = out_feat.geometry()
-    
-    
 
     return union_poly
 
 
-if __name__ == '__main__':
-    sys.path.append('C:/Users/chris.kerklaan/tools')
-    flood_dir = 'C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload'
-    os.chdir('C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload_test')
-    _dir = [i for i in  os.listdir(flood_dir) if 'vg' in i and ".shp" in i]
-    vector_geom = vector_to_geom('C:/Users/chris.kerklaan/Documents/Projecten/flooding/nl_mask2.shp')
-        
+if __name__ == "__main__":
+    sys.path.append("C:/Users/chris.kerklaan/tools")
+    flood_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload"
+    os.chdir(
+        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload_test"
+    )
+    _dir = [i for i in os.listdir(flood_dir) if "vg" in i and ".shp" in i]
+    vector_geom = vector_to_geom(
+        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/nl_mask2.shp"
+    )
+
     for i in _dir:
-        input_ds = ogr.Open(os.path.join(flood_dir,i))
+        input_ds = ogr.Open(os.path.join(flood_dir, i))
         input_layer = input_ds[0]
-        correct_ds, layer_name = correct(input_layer, 'Dummy')
+        correct_ds, layer_name = correct(input_layer, "Dummy")
         correct_layer = correct_ds[0]
         output_ds = vector_clip(correct_layer, vector_geom)
-        
+
         out_source = DRIVER_OGR_SHP.CreateDataSource(i)
-        out_layer = out_source.CopyLayer(output_ds[0], "layer", ["OVERWRITE=YES"])
+        out_layer = out_source.CopyLayer(
+            output_ds[0], "layer", ["OVERWRITE=YES"]
+        )
         out_source = None

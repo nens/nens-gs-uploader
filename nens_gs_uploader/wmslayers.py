@@ -10,6 +10,7 @@ Created on Mon Sep 23 10:29:05 2019
 
 # System imports
 import sys
+
 sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
 
 # Third-party imports
@@ -18,6 +19,7 @@ from requests import get, post, codes, delete
 
 # Local imports
 from lizard.localsecret import username, password
+
 
 class wmslayers(object):
     def __init__(self, username=username, password=password):
@@ -31,8 +33,7 @@ class wmslayers(object):
             "password": password,
             "Content-Type": "application/json",
         }
-        self.post_headers = {"username": username,
-                             "password": password}
+        self.post_headers = {"username": username, "password": password}
 
     def get_nens_id(self):
         r = get(
@@ -42,15 +43,15 @@ class wmslayers(object):
         )
         self.organisation_uuid = r.json()["results"][0]["uuid"]
         return self.organisation_uuid
-    
+
     def get_organisation_id(self, organisation):
         r = get(
             url="https://demo.lizard.net/api/v4/organisations/",
             headers=self.post_headers,
             params={"name__icontains": organisation},
         )
-        if r.json()['count'] > 1:
-            return print('count search results more than 1', r.json())
+        if r.json()["count"] > 1:
+            return print("count search results more than 1", r.json())
         else:
             self.organisation_uuid = r.json()["results"][0]["uuid"]
         return self.organisation_uuid
@@ -76,16 +77,14 @@ class wmslayers(object):
         return slug_result, slug_exists
 
     def delete(self, uuid):
-        
+
         r = delete(
-            url=self.wmslayer_uuid.format(uuid = uuid),
-            headers=self.get_headers
+            url=self.wmslayer_uuid.format(uuid=uuid), headers=self.get_headers
         )
         if r.status_code == 204:
-            print('delete store succes', r.status_code)
+            print("delete store succes", r.status_code)
         else:
             print("delete store failure:", r.json())
-        
 
     def create(self, slug, overwrite=False):
         _json, store_exists = self.get_layer(slug)
@@ -131,37 +130,40 @@ class wmslayers(object):
 
         else:
             print("post data succes", r.status_code)
-            
+
+
 wmslayer = wmslayers()
 
 if __name__ == "__main__":
-    #test
+    # test
     wmslayer = wmslayers()
-    organisation_uuid = wmslayer.get_organisation_id('Hollands noorderkwartier')
-    wms_info, result_exists =  wmslayer.get_layer("test_name")
-    wmslayer.delete(wms_info['uuid'])
-    
+    organisation_uuid = wmslayer.get_organisation_id(
+        "Hollands noorderkwartier"
+    )
+    wms_info, result_exists = wmslayer.get_layer("test_name")
+    wmslayer.delete(wms_info["uuid"])
+
     # Add wms layers
-    configuration =  {
-                "name": "test_name",
-                "description": "",
-                "slug": "test_zeebrugge",
-                "tiled": True,
-                "wms_url": "https://geoserver9.lizard.net/geoserver/zeebrugge/wms",
-                "access_modifier": 0,
-                "supplier": "chris.kerklaan",
-                "shared_with": [],
-                "datasets":["hhnk_klimaatatlas"],
-                "organisation":organisation_uuid
-            }
-    
+    configuration = {
+        "name": "test_name",
+        "description": "",
+        "slug": "test_zeebrugge",
+        "tiled": True,
+        "wms_url": "https://geoserver9.lizard.net/geoserver/zeebrugge/wms",
+        "access_modifier": 0,
+        "supplier": "chris.kerklaan",
+        "shared_with": [],
+        "datasets": ["hhnk_klimaatatlas"],
+        "organisation": organisation_uuid,
+    }
+
     r = post(
-                url="https://hhnk.lizard.net/api/v4/wmslayers/",
-                data=json.dumps(configuration),
-                headers=get_headers,
-            )
+        url="https://hhnk.lizard.net/api/v4/wmslayers/",
+        data=json.dumps(configuration),
+        headers=get_headers,
+    )
     print(r.json())
-    
+
     wmsinfo = wmslayer.create(configuration, overwrite=True)
-    
+
     pass

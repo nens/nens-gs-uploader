@@ -22,11 +22,13 @@ MEM_NUM = 0
 # Exceptions
 ogr.UseExceptions()
 
+
 def create_mem_ds():
     global MEM_NUM
     mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem{}".format(MEM_NUM))
     MEM_NUM = MEM_NUM + 1
     return mem_datasource
+
 
 def geom_transform(in_spatial_ref, out_epsg):
     out_spatial_ref = osr.SpatialReference()
@@ -51,9 +53,11 @@ def multipoly2poly(in_layer, out_layer):
         if geom == None:
             log_time("warning", "FID {} has no geometry.".format(count))
             continue
-        if (geom.GetGeometryName() == "MULTIPOLYGON" or 
-            geom.GetGeometryName() == "MULTILINESTRING"):
-            for geom_part in geom:               
+        if (
+            geom.GetGeometryName() == "MULTIPOLYGON"
+            or geom.GetGeometryName() == "MULTILINESTRING"
+        ):
+            for geom_part in geom:
                 addPolygon(geom_part.ExportToWkb(), content, out_layer)
         else:
             addPolygon(geom.ExportToWkb(), content, out_layer)
@@ -71,7 +75,7 @@ def addPolygon(simple_polygon, content, out_lyr):
             out_feat.SetField(key, value)
         except Exception as e:
             print(e)
-            
+
     out_lyr.CreateFeature(out_feat)
 
 
@@ -90,10 +94,9 @@ def correct(in_layer, layer_name, epsg=3857):
             log_time("error", "laagnaam te lang, 50 characters max.")
             log_time("info", "formatting naar 50.")
             layer_name = layer_name[:50]
-            
+
         mem_datasource = create_mem_ds()
 
-        
         mem_layer = mem_datasource.CreateLayer(
             layer_name, in_spatial_ref, geom_type
         )
@@ -117,12 +120,11 @@ def correct(in_layer, layer_name, epsg=3857):
         )
         flatten = False
         geom_name = ogr.GeometryTypeToName(geom_type)
-        if (geom_name  == '3D Multi Polygon' or 
-            geom_name == '3D Line String'):
+        if geom_name == "3D Multi Polygon" or geom_name == "3D Line String":
             log_time("warning", "geom type: " + geom_name)
             log_time("info", "Flattening to 2D")
             flatten = True
-            
+
         elif geom_type < 0:
             log_time("error", "geometry invalid, most likely has a z-type")
             raise ValueError(
@@ -130,8 +132,7 @@ def correct(in_layer, layer_name, epsg=3857):
                 "geom type: ",
                 geom_name,
             )
-            
-        
+
         # Create output dataset and force dataset to multiparts
         if geom_type == 3 or geom_type == 6:
             geom_type = 3  # polygon
@@ -147,7 +148,6 @@ def correct(in_layer, layer_name, epsg=3857):
             layer_name, spatial_ref_3857, geom_type
         )
         layer_defn = in_layer.GetLayerDefn()
-        
 
         # Copy fields from memory layer to output dataset
         for i in range(layer_defn.GetFieldCount()):
@@ -156,14 +156,16 @@ def correct(in_layer, layer_name, epsg=3857):
         log_time("info", "check 3 - Reproject layer to {}".format(str(epsg)))
         for out_feat in tqdm(mem_layer):
             out_geom = out_feat.GetGeometryRef()
-            
 
             # validity check
             if not out_geom.IsValid():
                 # remove self intersection
                 out_geom = out_geom.Buffer(0)
                 if not out_geom.IsValid():
-                    log_time("warning", "geometry invalid even with buffer, skipping")
+                    log_time(
+                        "warning",
+                        "geometry invalid even with buffer, skipping",
+                    )
                     continue
 
             # Force and transform geometry
