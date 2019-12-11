@@ -5,7 +5,7 @@ Created on Mon Jul 15 18:30:37 2019
 @author: chris.kerklaan - N&S
 """
 # Third-party imports
-import osr
+from tqdm import tqdm
 import ogr
 import gdal
 
@@ -18,6 +18,7 @@ from nens_gs_uploader.localsecret.localsecret import (
     project_klimaatatlas as pg_project_lizard,
     project_lizard as pg_project_atlas,
     production_klimaatatlas_v1 as pg_atlas_v1,
+    production_flooding as pg_flooding
 )
 
 # Exceptions
@@ -30,6 +31,7 @@ progress = gdal.TermProgress_nocb
 SERVERS = {
     "STAGING": "https://maps2.staging.lizard.net/geoserver/rest",
     "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/rest/",
+    "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/rest/",
     "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/rest/",
     "PROJECTEN_KLIMAATATLAS": "https://maps1.project.lizard.net/geoserver/rest/",
     "PROJECTEN_LIZARD": "https://maps1.project.lizard.net/geoserver/rest/",
@@ -42,6 +44,7 @@ PG_DATABASE = {
     "PRODUCTIE_LIZARD": pg_lizard,
     "PROJECTEN_KLIMAATATLAS": pg_project_atlas,
     "PROJECTEN_LIZARD": pg_project_lizard,
+    "PRODUCTIE_FLOODING": pg_flooding
 }
 
 
@@ -57,59 +60,44 @@ def connect2pg_database(database):
     return connection.ogr_connection()
 
 
-def copy2pg_database(database, in_layer, layer_name):
-    try:
-        out_layer = database.datasource.CopyLayer(
-            in_layer,
-            layer_name,
-            [
-                "OVERWRITE=YES",
-                "SCHEMA=public",
+def copy2pg_database(database, in_layer, layer_name, schema='public'):
+    options = [ "OVERWRITE=YES",
+                "SCHEMA={}".format(schema),
                 "SPATIAL_INDEX=GIST",
                 "FID=ogc_fid",
-            ],
-        )
+                'PRECISION=NO']
+    try:
+        ogr.RegisterAll()
+        new_layer = database.datasource.CreateLayer(layer_name, in_layer.GetSpatialRef(), ogr.wkbUnknown, options)
+        for x in range(in_layer.GetLayerDefn().GetFieldCount()):
+            new_layer.CreateField(in_layer.GetLayerDefn().GetFieldDefn(x))
 
+        new_layer.StartTransaction()
+        for x in tqdm(range(in_layer.GetFeatureCount())):
+            new_feature = in_layer.GetFeature(x)
+            new_feature.SetFID(-1)
+            new_layer.CreateFeature(new_feature)
+            if x % 128 == 0:
+                new_layer.CommitTransaction()
+                new_layer.StartTransaction()
+        new_layer.CommitTransaction()
+        
     except Exception as e:
-        print(e)
-        print("try copying manually")
-
-        srs = osr.SpatialReference()
-        srs.ImportFromEPSG(3857)
-        feature = in_layer[0]
-        geom = feature.GetGeometryRef()
-        geom_type = geom.GetGeometryType()
-
-        out_layer = database.datasource.CreateLayer(
-            layer_name, srs, geom_type, ["OVERWRITE=YES"]
+        print('Got exception', e, 'trying copy layer')
+        
+        new_layer = database.datasource.CopyLayer(
+            in_layer,
+            layer_name,
+            options,
         )
-        out_layer.StartTransaction()
 
-        # define all fields
-        in_layer_defn = in_layer.GetLayerDefn()
-        for i in range(in_layer_defn.GetFieldCount()):
-            field_defn = in_layer_defn.GetFieldDefn(i)
-            out_layer.CreateField(field_defn)
 
-        for in_feature in in_layer:
-            out_feature = ogr.Feature(in_layer_defn)
-            out_feature.SetGeometry(in_feature.GetGeometryRef())
-            out_layer.CreateFeature(out_feature)
-            feature = None
-
-        out_layer.CommitTransaction()
-        database.datasource.StartTransaction()
-        database.datasource.ExecuteSQL(
-            'CREATE INDEX idx ON "{}"'
-            "USING GIST (wkb_geometry);".format(layer_name)
-        )
-        database.datasource.CommitTransaction()
 
     finally:
-        if out_layer.GetFeatureCount() == 0:
+        if new_layer.GetFeatureCount() == 0:
             raise ValueError("Postgres vector feature count is 0")
 
-        out_layer = None
+        new_layer = None
 
 
 def add_metadata_pgdatabase(setting, database):
@@ -130,3 +118,8 @@ def add_metadata_pgdatabase(setting, database):
         new_feature.SetField(key, value)
     metadata_layer.CreateFeature(new_feature)
     metadata_layer.CommitTransaction()
+    
+if __name__ == '__main__':
+    import sys
+    sys.path.append('C:/Users/chris.kerklaan/tools')
+    inifile = 'C:/Users/chris.kerklaan/tools/instellingen/meerdijk/nens_gs_uploader.ini'

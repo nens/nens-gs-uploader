@@ -17,10 +17,16 @@ from nens_gs_uploader.project import log_time
 
 # Globals
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
+MEM_NUM = 0
 
 # Exceptions
 ogr.UseExceptions()
 
+def create_mem_ds():
+    global MEM_NUM
+    mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem{}".format(MEM_NUM))
+    MEM_NUM = MEM_NUM + 1
+    return mem_datasource
 
 def geom_transform(in_spatial_ref, out_epsg):
     out_spatial_ref = osr.SpatialReference()
@@ -45,10 +51,9 @@ def multipoly2poly(in_layer, out_layer):
         if geom == None:
             log_time("warning", "FID {} has no geometry.".format(count))
             continue
-
         if (geom.GetGeometryName() == "MULTIPOLYGON" or 
             geom.GetGeometryName() == "MULTILINESTRING"):
-            for geom_part in geom:
+            for geom_part in geom:               
                 addPolygon(geom_part.ExportToWkb(), content, out_layer)
         else:
             addPolygon(geom.ExportToWkb(), content, out_layer)
@@ -62,12 +67,15 @@ def addPolygon(simple_polygon, content, out_lyr):
     out_feat.SetGeometry(polygon)
 
     for key, value in content.items():
-        out_feat.SetField(key, value)
-
+        try:
+            out_feat.SetField(key, value)
+        except Exception as e:
+            print(e)
+            
     out_lyr.CreateFeature(out_feat)
 
 
-def correct(in_layer, layer_name):
+def correct(in_layer, layer_name, epsg=3857):
     try:
         # lower layer_name
         layer_name = layer_name.lower()
@@ -82,10 +90,10 @@ def correct(in_layer, layer_name):
             log_time("error", "laagnaam te lang, 50 characters max.")
             log_time("info", "formatting naar 50.")
             layer_name = layer_name[:50]
-            #raise NameError("laagnaam te lang, 50 characters max.")
             
+        mem_datasource = create_mem_ds()
 
-        mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem")
+        
         mem_layer = mem_datasource.CreateLayer(
             layer_name, in_spatial_ref, geom_type
         )
@@ -102,16 +110,16 @@ def correct(in_layer, layer_name):
             log_time("error", "Multipart to singlepart failed")
             raise ValueError("Multipart to singlepart failed")
 
-        print('Spatial reference', in_spatial_ref.GetName() ) 
         spatial_ref_3857 = osr.SpatialReference()
-        spatial_ref_3857.ImportFromEPSG(3857)
+        spatial_ref_3857.ImportFromEPSG(int(epsg))
         reproject = osr.CoordinateTransformation(
             in_spatial_ref, spatial_ref_3857
         )
-        
         flatten = False
-        if ogr.GeometryTypeToName(geom_type) == '3D Multi Polygon':
-            log_time("warning", "geom type: " + ogr.GeometryTypeToName(geom_type))
+        geom_name = ogr.GeometryTypeToName(geom_type)
+        if (geom_name  == '3D Multi Polygon' or 
+            geom_name == '3D Line String'):
+            log_time("warning", "geom type: " + geom_name)
             log_time("info", "Flattening to 2D")
             flatten = True
             
@@ -120,9 +128,10 @@ def correct(in_layer, layer_name):
             raise ValueError(
                 "geometry invalid, most likely has a z-type",
                 "geom type: ",
-                ogr.GeometryTypeToName(geom_type),
+                geom_name,
             )
             
+        
         # Create output dataset and force dataset to multiparts
         if geom_type == 3 or geom_type == 6:
             geom_type = 3  # polygon
@@ -133,7 +142,7 @@ def correct(in_layer, layer_name):
         elif geom_type == 1 or geom_type == 4:
             geom_type = 1  # point
 
-        out_datasource = DRIVER_OGR_MEM.CreateDataSource("mem2")
+        out_datasource = create_mem_ds()
         out_layer = out_datasource.CreateLayer(
             layer_name, spatial_ref_3857, geom_type
         )
@@ -144,15 +153,18 @@ def correct(in_layer, layer_name):
         for i in range(layer_defn.GetFieldCount()):
             out_layer.CreateField(layer_defn.GetFieldDefn(i))
 
-        log_time("info", "check 3 - Reproject layer to 3857")
+        log_time("info", "check 3 - Reproject layer to {}".format(str(epsg)))
         for out_feat in tqdm(mem_layer):
             out_geom = out_feat.GetGeometryRef()
             
 
             # validity check
             if not out_geom.IsValid():
-                log_time("warning", "geometry invalid, skipping")
-                continue
+                # remove self intersection
+                out_geom = out_geom.Buffer(0)
+                if not out_geom.IsValid():
+                    log_time("warning", "geometry invalid even with buffer, skipping")
+                    continue
 
             # Force and transform geometry
             out_geom = ogr.ForceTo(out_geom, geom_type)

@@ -7,6 +7,9 @@ Created on Mon Jul 22 21:39:39 2019
 
 # Third-party imports
 import csv
+import requests
+import os
+from bs4 import BeautifulSoup as bs
 from geoserver.catalog import Catalog
 from geoserver.util import shapefile_and_friends
 from tqdm import tqdm
@@ -37,12 +40,24 @@ class wrap_geoserver:
         styles = []
         self.workspaces = []
         self.workspace_names = []
+#        self.workspace_layers = {}
 
         for workspace in self.catalog.get_workspaces():
             styles = styles + self.catalog.get_styles(workspace)
             self.workspace_names.append(workspace._name)
             self.workspaces.append(workspace)
-
+#            for datastore in get(workspace.datastore_url, 'name'):
+#                url = "{}/workspsaces/{}/datastores/{}".format(self.path, 
+#                             workspace._name,
+#                             datastore)
+#                url.replace('\\','/')
+#                'https://flod-geoserver1.lizard.net/geoserver/rest/workspaces/ror/datastores/ror_actueel_d6'
+#                https://flod-geoserver1.lizard.net/geoserver/rest/workspaces\ipo_ror\datastores\ipo_ror_190226-kaart4
+#                print(url)
+#                self.workspace_layers[workspace._name] = get(url, 'a')
+#                
+        
+        
         self.styles = styles + [style for style in self.catalog.get_styles()]
         self.style_names = [style.name for style in self.styles]
 
@@ -103,7 +118,11 @@ class wrap_geoserver:
     def write_abstract(self, data):
         self.resource.abstract = data
         self.catalog.save(self.resource)
-
+        
+    def write_title(self, title):
+        self.resource.title = title
+        self.catalog.save(self.resource)
+        
     def get_connection_parameters(self):
         self.get_resource()
         return self.resource.store.connection_parameters
@@ -148,24 +167,39 @@ class wrap_geoserver:
             )
             self.store_name = store_name
 
-    def publish_layer(self, layer_name, overwrite=False, epsg="3857"):
+    def publish_layer(self, layer_name, 
+                      workspace_name,
+                      overwrite=False, epsg="3857"):
+        
         layer_exists = layer_name in self.layer_names
-
+        #if layer_name in self.workspace_layers[workspace_name]:
+        slug  = self.get_slug(workspace_name, layer_name)
         if overwrite and layer_exists:
-            print("layer already exists, overwriting layer")
+            print("Layer exists, deleting layer")
+            try:
+                
+                self.layer = self.catalog.get_layer(slug)
+                self.delete(self.layer)
+                self.reload()
 
-            self.layer = self.catalog.get_layer(layer_name)
-            self.delete(self.layer)
-            self.reload()
+                layer_exists = False
+                
+            except Exception as e:
+                print(e)
+                print('Layer does not exist in workspace')
+                layer_exists = False
+                
+#            else:
+#                print('Layer does not exists in workspace, not overwriting')
 
-            layer_exists = False
 
         if not layer_exists:
+            print('Adding layer')
             feature_type = self.catalog.publish_featuretype(
                 layer_name,
                 self.store,
-                "EPSG:{}".format(epsg),
-                srs="EPSG:{}".format(epsg),
+                "EPSG:{}".format(str(epsg)),
+                srs="EPSG:{}".format((epsg)),
             )
             self.save(feature_type)
             self.feature_type = feature_type
@@ -173,7 +207,7 @@ class wrap_geoserver:
         else:
             print("layer already exists, using existing layer")
 
-        self.get_layer(layer_name)
+        self.get_layer(slug)
         self.layer_name = layer_name
 
     def save(self, save_object):
@@ -227,9 +261,22 @@ class wrap_geoserver:
                 print("Style already exists, using current style")
                 self.style_name = sld_name
 
-    def set_sld_for_layer(self):
-        self.style_slug = self.get_slug(self.workspace_name, self.style_name)
+    def set_sld_for_layer(self, workspace_name = None,
+                         style_name = None, use_custom=False):
+        if not use_custom:
+            workspace_name = self.workspace_name
+            style_name = self.style_name
+            self.style_slug = self.get_slug(workspace_name, style_name)
+        
+        else:
+             if workspace_name is None:
+                 self.style_slug = style_name
+             else:
+                self.style_slug = self.get_slug(workspace_name, style_name)     
+            
+            
         self.style = self.catalog.get_style(self.style_slug)
+        print('Setting {} for {}'.format(self.style.name, self.layer.name))
         self.layer.default_style = self.style
         self.save(self.layer)
 
@@ -248,7 +295,25 @@ class wrap_geoserver:
             self.style = self.catalog.get_style(layer_slug)
         self.sld_body = self.style.sld_body
         return self.sld_body
+    
+    def get_layer_workspace(self,layer_name):
+        return self.catalog.get_layer(layer_name).resource.workspace.name
 
-
+def get(url, _type='a'):
+    r= requests.get(url)
+    soup  = bs(r.content,'html.parser')
+    _list = []
+    for i in soup.find_all(_type):
+        i = str(i)
+        name = i.split("<{}>".format(_type))[-1]
+        name = name.split("</{}>".format(_type))[0]
+        _list.append(name)
+    return _list
+        
+    
+    
 if __name__ == "__main__":
-    pass
+    fl = wrap_geoserver('PRODUCTIE_FLOODING')
+#    ka = wrap_geoserver("PRODUCTIE_KLIMAATATLAS")
+#    ka.write_title
+#    pass
