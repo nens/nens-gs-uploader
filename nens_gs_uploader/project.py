@@ -45,7 +45,6 @@ class logger(object):
         # you might want to specify some extra behavior here.
         pass
 
-
 def print_time(s1="", s2="", size="s"):
     global time_last_print_small
     global time_last_print_large
@@ -68,17 +67,17 @@ def print_time(s1="", s2="", size="s"):
     time_last_print_large = now
     return print(_print)
 
-
 def percentage(count, total):
     return str((count / total) * 100) + "%"
 
-
 def mk_temp(path=os.getcwd()):
-    tempfolder = os.path.join(path, "temp")
+    return mk_dir()
+
+def mk_dir(path=os.getcwd(), folder_name='temp'):
+    tempfolder = os.path.join(path, folder_name)
     if not os.path.exists(tempfolder):
         os.mkdir(tempfolder)
     return tempfolder
-
 
 def print_list(_list, subject):
     if not isinstance(_list, list):

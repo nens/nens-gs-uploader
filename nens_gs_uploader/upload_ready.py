@@ -23,6 +23,10 @@ MEM_NUM = 0
 ogr.UseExceptions()
 
 
+class FeatureCountFailure(Exception):
+    """ Missing an sld"""
+    pass
+
 def create_mem_ds():
     global MEM_NUM
     mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem{}".format(MEM_NUM))
@@ -39,6 +43,7 @@ def geom_transform(in_spatial_ref, out_epsg):
 
 def multipoly2poly(in_layer, out_layer):
 
+    lost_features = []
     layer_defn = in_layer.GetLayerDefn()
     field_names = []
     for n in range(layer_defn.GetFieldCount()):
@@ -52,7 +57,9 @@ def multipoly2poly(in_layer, out_layer):
         geom = in_feat.GetGeometryRef()
         if geom == None:
             log_time("warning", "FID {} has no geometry.".format(count))
+            lost_features.append(in_feat.GetFID())
             continue
+        
         if (
             geom.GetGeometryName() == "MULTIPOLYGON"
             or geom.GetGeometryName() == "MULTILINESTRING"
@@ -61,6 +68,8 @@ def multipoly2poly(in_layer, out_layer):
                 addPolygon(geom_part.ExportToWkb(), content, out_layer)
         else:
             addPolygon(geom.ExportToWkb(), content, out_layer)
+            
+    return lost_features
 
 
 def addPolygon(simple_polygon, content, out_lyr):
@@ -79,21 +88,58 @@ def addPolygon(simple_polygon, content, out_lyr):
     out_lyr.CreateFeature(out_feat)
 
 
-def correct(in_layer, layer_name, epsg=3857):
-    try:
-        # lower layer_name
-        layer_name = layer_name.lower()
+def fix_geometry(geometry):
+    
+    # check pointcount if linestring
+    if geometry.GetGeometryType() == ogr.wkbLineString:
+        if len(geometry.GetPointCount()) == 1:
+            return geometry, False
+        
+    # check self intersections
+    geometry = geometry.Buffer(0)
+        
+    # check slivers
+    if not geometry.IsValid():
+        perimeter = geometry.Boundary().Length()
+        area = geometry.GetArea()
+        sliver = float(perimeter/area)
+        
+        if sliver < 1:
+            wkt = geometry.ExportToWkt()
+            geometry = ogr.CreateGeometryFromWkt(wkt) 
+            
+    return geometry, geometry.IsValid()
+        
 
+def correct(in_layer, layer_name='', epsg=3857):
+    """
+        This function standardizes a vector layer:
+            1. Multipart to singleparts
+            2. 3D polygon to 2D polygon
+            3. Reprojection
+            4. Fix for self intersections
+            
+        INPUT: layer, layer_name
+       OUTPUT: corrected layer
+      """
+    
+    try:
+        # retrieving lost features
+        lost_features = []
+        in_feature_count  = in_layer.GetFeatureCount()
+        
         # Get inspatial reference and geometry from in shape
         geom_type = in_layer.GetGeomType()
         in_spatial_ref = in_layer.GetSpatialRef()
         in_layer.ResetReading()
 
-        log_time("info", "check 1 - Name length")
-        if len(layer_name) + 10 > 64:
-            log_time("error", "laagnaam te lang, 50 characters max.")
-            log_time("info", "formatting naar 50.")
-            layer_name = layer_name[:50]
+        if layer_name != '': # lower layer_name
+            layer_name = layer_name.lower()
+            log_time("info", "check - Name length")
+            if len(layer_name) + 10 > 64:
+                log_time("error", "laagnaam te lang, 50 characters max.")
+                log_time("info", "formatting naar 50.")
+                layer_name = layer_name[:50]
 
         mem_datasource = create_mem_ds()
 
@@ -106,18 +152,21 @@ def correct(in_layer, layer_name, epsg=3857):
             field_defn = layer_defn.GetFieldDefn(i)
             mem_layer.CreateField(field_defn)
 
-        log_time("info", "check 2 - Multipart to singlepart")
-        multipoly2poly(in_layer, mem_layer)
-
+        log_time("info", "check - Multipart to singlepart")
+        lost_feat = multipoly2poly(in_layer, mem_layer)
+        lost_features = lost_features + lost_feat
+        
+        
         if mem_layer.GetFeatureCount() == 0:
             log_time("error", "Multipart to singlepart failed")
-            raise ValueError("Multipart to singlepart failed")
+            raise FeatureCountFailure("Multipart to singlepart failed")
 
         spatial_ref_3857 = osr.SpatialReference()
         spatial_ref_3857.ImportFromEPSG(int(epsg))
         reproject = osr.CoordinateTransformation(
             in_spatial_ref, spatial_ref_3857
         )
+        
         flatten = False
         geom_name = ogr.GeometryTypeToName(geom_type)
         if geom_name == "3D Multi Polygon" or geom_name == "3D Line String":
@@ -134,13 +183,13 @@ def correct(in_layer, layer_name, epsg=3857):
             )
 
         # Create output dataset and force dataset to multiparts
-        if geom_type == 3 or geom_type == 6:
+        if geom_type == 6:
             geom_type = 3  # polygon
 
-        elif geom_type == 2 or geom_type == 5:
+        elif geom_type == 5:
             geom_type = 2  # linestring
 
-        elif geom_type == 1 or geom_type == 4:
+        elif geom_type == 4:
             geom_type = 1  # point
 
         out_datasource = create_mem_ds()
@@ -153,20 +202,22 @@ def correct(in_layer, layer_name, epsg=3857):
         for i in range(layer_defn.GetFieldCount()):
             out_layer.CreateField(layer_defn.GetFieldDefn(i))
 
-        log_time("info", "check 3 - Reproject layer to {}".format(str(epsg)))
+        log_time("info", "check - Reproject layer to {}".format(str(epsg)))
         for out_feat in tqdm(mem_layer):
             out_geom = out_feat.GetGeometryRef()
 
-            # validity check
-            if not out_geom.IsValid():
-                # remove self intersection
-                out_geom = out_geom.Buffer(0)
-                if not out_geom.IsValid():
-                    log_time(
+            try:
+                out_geom, valid = fix_geometry(out_geom)
+            except Exception as e:
+                print(e)
+                print(out_feat.GetFID())
+            if not valid:
+                log_time(
                         "warning",
                         "geometry invalid even with buffer, skipping",
                     )
-                    continue
+                lost_features.append(out_feat.GetFID())
+                continue
 
             # Force and transform geometry
             out_geom = ogr.ForceTo(out_geom, geom_type)
@@ -180,14 +231,28 @@ def correct(in_layer, layer_name, epsg=3857):
             out_feat.SetGeometry(out_geom)
             out_layer.CreateFeature(out_feat)
 
-        log_time("info", "check 4 - delete ogc_fid if exists")
+        log_time("info", "check  - delete ogc_fid if exists")
         out_layer_defn = out_layer.GetLayerDefn()
         for n in range(out_layer_defn.GetFieldCount()):
             field = out_layer_defn.GetFieldDefn(n)
             if field.name == "ogc_fid":
                 out_layer.DeleteField(n)
                 break
-
+            
+        log_time("info", "check  - Features count")
+        out_feature_count =  out_layer.GetFeatureCount()
+        
+        if len(lost_features) > 0:
+            log_time("warning", "Lost {} features during corrections".format(len(lost_features)))
+            log_time("warning", "FIDS: {}".format(lost_features))
+            
+        elif in_feature_count > out_feature_count:
+            raise ValueError("In feature count greater than out feature count")
+        else:
+            pass
+        
+            
+            
     except Exception as e:
         print(e)
 

@@ -9,6 +9,7 @@ Created on Mon Jul 22 21:39:39 2019
 import csv
 import requests
 import os
+import re
 from bs4 import BeautifulSoup as bs
 from geoserver.catalog import Catalog
 from geoserver.util import shapefile_and_friends
@@ -16,93 +17,78 @@ from tqdm import tqdm
 
 # local imports
 from nens_gs_uploader.localsecret.localsecret import username, password
-from nens_gs_uploader.postgis import SERVERS
+from nens_gs_uploader.postgis import REST
 
 
 class wrap_geoserver:
     """ Geoserver (gsconfig) wrapper """
 
-    def __init__(self, geoserver_name, username=username, password=password):
+    def __init__(self, geoserver_name, username=username, password=password, easy=False):
         self.name = geoserver_name
-        self.path = SERVERS[geoserver_name]
+        self.path = REST[geoserver_name]
         self.catalog = Catalog(self.path, username, password)
+        
+        
+        if not easy:
+            self.layers = []
+            self.layer_names = []
+    
+            for layer in self.catalog.get_layers():
+                self.layers.append(layer)
+                self.layer_names.append(layer.name)
+    
+            self.stores = [store for store in self.catalog.get_stores()]
+            self.store_names = [store.name for store in self.stores]
+    
+            styles = []
+            self.workspaces = []
+            self.workspace_names = []
+    
+            for workspace in self.catalog.get_workspaces():
+                styles = styles + self.catalog.get_styles(workspace)
+                self.workspace_names.append(workspace._name)
+                self.workspaces.append(workspace)
+    
+    
+            self.styles = styles + [style for style in self.catalog.get_styles()]
+            self.style_names = [style.name for style in self.styles]
 
-        self.layers = []
-        self.layer_names = []
+    def unpack(self, workspace_name, store_type='datastore'):
+        layers_and_styles = {}
+        features = []
+        workspace = self.get_workspace(workspace_name)
+        
+        if store_type == 'datastore':
+            store_url = workspace.datastore_url
+        elif store_type == 'coveragestore':
+            store_url = workspace.coveragestore_url
+        else:
+            print('No correct store given')
+        
+        for datastore in tqdm(get(store_url, 'name')):
+            url = "{}workspaces/{}/datastores/{}".format(
+                                        self.path,
+                                     workspace.name,
+                                    datastore)
+            features = features + get(url, between_quotes=True)
+        
+        for feature in features:
+            layer_name =  os.path.basename(feature).split(".")[0]
+            self.get_layer(self.get_slug(workspace.name, layer_name))
+            layers_and_styles[layer_name] =self.layer.default_style
+            
+        setattr(self, workspace_name +"_data",  layers_and_styles)
+        return layers_and_styles 
 
-        for layer in self.catalog.get_layers():
-            self.layers.append(layer)
-            self.layer_names.append(layer.name)
-
-        self.stores = [store for store in self.catalog.get_stores()]
-        self.store_names = [store.name for store in self.stores]
-
-        styles = []
-        self.workspaces = []
-        self.workspace_names = []
-        #        self.workspace_layers = {}
-
-        for workspace in self.catalog.get_workspaces():
-            styles = styles + self.catalog.get_styles(workspace)
-            self.workspace_names.append(workspace._name)
-            self.workspaces.append(workspace)
-        #            for datastore in get(workspace.datastore_url, 'name'):
-        #                url = "{}/workspsaces/{}/datastores/{}".format(self.path,
-        #                             workspace._name,
-        #                             datastore)
-        #                url.replace('\\','/')
-        #                'https://flod-geoserver1.lizard.net/geoserver/rest/workspaces/ror/datastores/ror_actueel_d6'
-        #                https://flod-geoserver1.lizard.net/geoserver/rest/workspaces\ipo_ror\datastores\ipo_ror_190226-kaart4
-        #                print(url)
-        #                self.workspace_layers[workspace._name] = get(url, 'a')
-        #
-
-        self.styles = styles + [style for style in self.catalog.get_styles()]
-        self.style_names = [style.name for style in self.styles]
-
-    def unpack(self, workspace):
-        """ Fetches all data in specific workspace. """
-        """ Does not unpack coverage stores """
-
-        layers_in_workspace = []
-        with open("hrefs.csv", "r") as csvfile:
-            read = csv.reader(csvfile, delimiter=",")
-            for row in read:
-                if row[1] == "None" or "datastore" not in row[1]:
-                    continue
-
-                splits = row[1].split("workspaces/")[1].split("/")
-                if workspace == splits[0]:
-                    layers_in_workspace.append(splits[-1].split(".xml")[0])
-
-        self.data = {}
-        for layer_name in tqdm(layers_in_workspace):
-
-            try:
-                layer = self.catalog.get_layer(layer_name)
-                style = layer.default_style
-                print(style.name)
-                # resource = layer.resource
-                layer_data = {
-                    #        "layer"     : layer,
-                    "style": style,
-                    #        "resource"  : resource,
-                    #        "connection": layer.resource.store.connection_parameters,
-                    #       "store"     : resource.store
-                }
-
-                self.data[layer_name] = layer_data
-
-            except Exception:
-                pass
-
-        return self.data
+        
+        
 
     def get_layer(self, layer):
         self.layer = self.catalog.get_layer(layer)
         self.resource = self.layer.resource
         self.layer_name = self.layer.resource.name
         self.sld_name = self.layer.default_style.name
+        self.sld_body = self.layer.default_style.sld_body
 
     def get_store(self, layer):
         self.store = self.layer.resource._store
@@ -113,6 +99,7 @@ class wrap_geoserver:
     def get_workspace(self, workspace_name):
         self.workspace = self.catalog.get_workspace(workspace_name)
         self.workspace_name = self.workspace._name
+        return self.workspace
 
     def write_abstract(self, data):
         self.resource.abstract = data
@@ -291,6 +278,7 @@ class wrap_geoserver:
             self.style = self.catalog.get_style(self.layer_slug)
         else:
             self.style = self.catalog.get_style(layer_slug)
+            
         self.sld_body = self.style.sld_body
         return self.sld_body
 
@@ -298,20 +286,24 @@ class wrap_geoserver:
         return self.catalog.get_layer(layer_name).resource.workspace.name
 
 
-def get(url, _type="a"):
+def get(url, _type="a", between_quotes=False):
     r = requests.get(url)
     soup = bs(r.content, "html.parser")
     _list = []
     for i in soup.find_all(_type):
         i = str(i)
-        name = i.split("<{}>".format(_type))[-1]
-        name = name.split("</{}>".format(_type))[0]
-        _list.append(name)
+        if between_quotes:
+            _list = _list + re.findall('"([^"]*)"', i) 
+        else:
+            name = i.split("<{}>".format(_type))[-1]
+            name = name.split("</{}>".format(_type))[0]
+            _list.append(name)
+    
     return _list
 
 
 if __name__ == "__main__":
-    fl = wrap_geoserver("PRODUCTIE_FLOODING")
+#    fl = wrap_geoserver("PRODUCTIE_FLOODING")
 #    ka = wrap_geoserver("PRODUCTIE_KLIMAATATLAS")
 #    ka.write_title
-#    pass
+    pass

@@ -28,13 +28,21 @@ ogr.UseExceptions()
 progress = gdal.TermProgress_nocb
 
 # Global within script
-SERVERS = {
+REST = {
     "STAGING": "https://maps2.staging.lizard.net/geoserver/rest",
     "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/rest/",
     "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/rest/",
     "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/rest/",
     "PROJECTEN_KLIMAATATLAS": "https://maps1.project.lizard.net/geoserver/rest/",
     "PROJECTEN_LIZARD": "https://maps1.project.lizard.net/geoserver/rest/",
+}
+SERVERS = {
+    "STAGING": "https://maps2.staging.lizard.net/geoserver/",
+    "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/",
+    "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/",
+    "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/",
+    "PROJECTEN_KLIMAATATLAS": "https://maps1.project.lizard.net/geoserver/",
+    "PROJECTEN_LIZARD": "https://maps1.project.lizard.net/geoserver/",
 }
 
 PG_DATABASE = {
@@ -78,12 +86,16 @@ def copy2pg_database(database, in_layer, layer_name, schema="public"):
 
         new_layer.StartTransaction()
         for x in tqdm(range(in_layer.GetFeatureCount())):
-            new_feature = in_layer.GetFeature(x)
-            new_feature.SetFID(-1)
-            new_layer.CreateFeature(new_feature)
-            if x % 128 == 0:
-                new_layer.CommitTransaction()
-                new_layer.StartTransaction()
+            try: 
+                new_feature = in_layer.GetFeature(x)
+                new_feature.SetFID(-1)
+                new_layer.CreateFeature(new_feature)
+                if x % 128 == 0:
+                    new_layer.CommitTransaction()
+                    new_layer.StartTransaction()
+            except Exception as e:
+                print("Got exception", e, "skipping feature")
+                
         new_layer.CommitTransaction()
 
     except Exception as e:
@@ -96,7 +108,6 @@ def copy2pg_database(database, in_layer, layer_name, schema="public"):
     finally:
         if new_layer.GetFeatureCount() == 0:
             raise ValueError("Postgres vector feature count is 0")
-
         new_layer = None
 
 
@@ -122,6 +133,5 @@ def add_metadata_pgdatabase(setting, database):
 
 if __name__ == "__main__":
     import sys
-
     sys.path.append("C:/Users/chris.kerklaan/tools")
     inifile = "C:/Users/chris.kerklaan/tools/instellingen/meerdijk/nens_gs_uploader.ini"

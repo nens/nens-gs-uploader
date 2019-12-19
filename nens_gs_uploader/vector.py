@@ -12,12 +12,14 @@ import os
 import osr
 import ogr
 import gdal
+import sys
 from tqdm import tqdm
 
-
+sys.path.append("C:/Users/chris.kerklaan/tools")
 # Local imports
 from nens_gs_uploader.postgis import connect2pg_database
 from nens_gs_uploader.upload_ready import correct
+from nens_gs_uploader.upload_ready import fix_geometry
 
 # Global DRIVERS
 DRIVER_GDAL_MEM = gdal.GetDriverByName("MEM")
@@ -200,7 +202,6 @@ class wrap_shape(object):
         out_feat.SetGeometry(polygon)
         out_lyr.CreateFeature(out_feat)
 
-
 def vector_clip(in_layer, clip_geom):
     out_datasource = DRIVER_OGR_MEM.CreateDataSource("temp")
     out_layer = out_datasource.CreateLayer(
@@ -210,19 +211,28 @@ def vector_clip(in_layer, clip_geom):
     in_layer_defn = in_layer.GetLayerDefn()
 
     in_layer.SetSpatialFilter(clip_geom)
-
+    clip_boundary = clip_geom.Boundary()
     # Copy fields from memory layer to output dataset
     for i in range(in_layer_defn.GetFieldCount()):
         out_layer.CreateField(in_layer_defn.GetFieldDefn(i))
-
+        
+    lost_features = []
     print("start masking")
     for out_feat in tqdm(in_layer):
         out_geom = out_feat.geometry()
+        out_geom, valid = fix_geometry(out_geom)
+        
+        if not valid:
+            lost_features.append(out_feat.GetFID())
 
-        # no self intersection
-        out_geom = out_geom.Buffer(0)
+        #try:
+        intersection = out_geom.Intersects(clip_boundary)
+        #except Exception as e:
+        #    print(e)
+        #    lost_features.append(out_feat.GetFID())
+        #    continue
 
-        if out_geom.Intersects(clip_geom.Boundary()):
+        if intersection:
             intersect = out_geom.Intersection(clip_geom)
             intersect_type = intersect.GetGeometryType()
 
@@ -244,19 +254,24 @@ def vector_clip(in_layer, clip_geom):
             out_layer.CreateFeature(out_feat)
 
         else:
+            print('outside')
             pass
+        
     in_layer = None
     out_layer = None
 
+    if len(lost_features) > 0:
+        print('Lost {} features'.format(len(lost_features)))
+        
     return out_datasource
 
 
-def vector_to_geom(vector_path):
+def vector_to_geom(vector_path, epsg):
     vector_ds = ogr.Open(vector_path)
     vector_layer = vector_ds[0]
 
-    # reproject
-    out_datasource, layer_name = correct(vector_layer, "Dummy")
+    # reproject and correct
+    out_datasource, layer_name = correct(vector_layer, epsg=epsg)
     out_layer = out_datasource[0]
 
     # dissolve
@@ -267,32 +282,52 @@ def vector_to_geom(vector_path):
             union_poly = union_poly.Union(out_geom)
 
         # remove self intersections
-        union_poly = union_poly.Buffer(0)
+        union_poly, valid = fix_geometry(union_poly)
+        
+        if not valid:
+            print('union not valid')
+            
 
     else:
         out_feat = out_layer[0]
         union_poly = out_feat.geometry()
 
-    return union_poly
+    geometry = ogr.CreateGeometryFromWkt(union_poly.ExportToWkt())
+  
+    out_datasource = None
+    vector_ds = None
+
+    return geometry
 
 
 if __name__ == "__main__":
-    sys.path.append("C:/Users/chris.kerklaan/tools")
-    flood_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload"
+
+    flood_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/vg_fixed"
     os.chdir(
         "C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload_test"
     )
     _dir = [i for i in os.listdir(flood_dir) if "vg" in i and ".shp" in i]
     vector_geom = vector_to_geom(
-        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/nl_mask2.shp"
+        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/nl_mask2.shp", epsg=28992
     )
-
+    
+    _dir = ['t10_vg2_fixed_28992.shp']
+    i = 't10_vg1_fixed_28992.shp' # done
+    i = 't10_vg2_fixed_28992.shp' # done
+    i = 't100_vg1_fixed_28992.shp' # done
+    i = 't100_vg2_fixed_28992.shp' # bezig
+    i = 't1000_vg1_fixed_28992.shp' # done
+    i = 't1000_vg2_fixed_28992.shp' # fail
+    i = 't10000_vg1_fixed_28992.shp' # done
+    i = 't10000_vg2_fixed_28992.shp'# bezig
+    
     for i in _dir:
         input_ds = ogr.Open(os.path.join(flood_dir, i))
+        input_ds= ogr.Open('C:/Users/chris.kerklaan/Documents/Projecten/flooding/upload_grouplayers/t1000_vg2_fixed_28992_2.shp')
         input_layer = input_ds[0]
-        correct_ds, layer_name = correct(input_layer, "Dummy")
-        correct_layer = correct_ds[0]
-        output_ds = vector_clip(correct_layer, vector_geom)
+        #correct_ds, layer_name = correct(input_layer, "Dummy")
+        #correct_layer = correct_ds[0]
+        output_ds = vector_clip(input_layer, vector_geom)
 
         out_source = DRIVER_OGR_SHP.CreateDataSource(i)
         out_layer = out_source.CopyLayer(
