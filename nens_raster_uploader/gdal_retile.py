@@ -921,9 +921,8 @@ def main(args=None):
     global Levels
     global PyramidOnly
     global UseDirForEachRow
-    
+
     Names = []
-    
 
     gdal.AllRegister()
 

@@ -16,9 +16,8 @@ def retile(raster_path):
         shutil.rmtree(temporary_directory)
     os.mkdir(temporary_directory)
     # print(raster_path, temporary_location)
-    print('retiling', raster_path)
-    print('current count in directory', len(os.listdir(temporary_directory)))
-    
+    print("retiling", raster_path)
+    print("current count in directory", len(os.listdir(temporary_directory)))
 
     main(
         [
