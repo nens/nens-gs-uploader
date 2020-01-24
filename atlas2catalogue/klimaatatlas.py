@@ -7,12 +7,7 @@ Created on Thu May 16 16:55:29 2019
 #system imports
 import sys
 
-#relevant paths
-BASE_MODULES  = "I:/Data_Sources/work/C_Kerklaan/scripts/base_modules"
-
-if BASE_MODULES not in sys.path:
-    sys.path.append(BASE_MODULES)
-    
+#relevant paths   
 import requests
 from tqdm import tqdm
 

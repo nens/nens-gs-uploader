@@ -26,6 +26,8 @@ DRIVER_GDAL_MEM = gdal.GetDriverByName("MEM")
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
 
+MEM_NUM=1
+
 # Shapes
 POLYGON = "POLYGON (({x1} {y1},{x2} {y1},{x2} {y2},{x1} {y2},{x1} {y1}))"
 POINT = "POINT ({x1} {y1})"
@@ -51,10 +53,9 @@ class wrap_shape(object):
 
         self.layers = [layer.GetName() for layer in self.datasource]
         self.sr = self.layer.GetSpatialRef()
-        # self.geom = self.layer[0].GetGeometryRef()
-        # self.geom_type = self.geom.GetGeometryType()
+        self.geom_type = self.layer.GetGeomType()
         self.layer.ResetReading()
-        self.geom_type = ogr.wkbPolygon
+
 
     def get_layer(self, layer_name):
         self.layer = self.datasource.GetLayerByName(layer_name)
@@ -171,7 +172,7 @@ class wrap_shape(object):
 
     def write_geometries(self, layer_name, path_name):
         try:
-            self.set_spatial_reference()
+            self.get_spatial_reference()
 
             data_source = DRIVER_OGR_SHP.CreateDataSource(path_name)
             out_layer = data_source.CreateLayer(
@@ -202,19 +203,44 @@ class wrap_shape(object):
         out_feat.SetGeometry(polygon)
         out_lyr.CreateFeature(out_feat)
 
-def vector_clip(in_layer, clip_geom):
-    out_datasource = DRIVER_OGR_MEM.CreateDataSource("temp")
+def vector_clip(datasource, clip_geom, write_dir=os.getcwd(), filter_only=False):
+    
+    # temp_shp = os.path.join(write_dir,'temp.shp')
+    # temp_clip = os.path.join(write_dir,'temp_clip.shp')
+    
+    temp_shp = '/vsimem/temp.shp'
+    temp_clip = '/vsimem/temp_clip.shp'
+    
+    input_vector =  wrap_shape(datasource)
+    input_vector.write_geometries('temp', temp_shp)
+    ds = ogr.Open(temp_shp)
+    in_layer = ds[0]
+    
+    out_datasource = create_mem_ds()
     out_layer = out_datasource.CreateLayer(
         "temp", in_layer.GetSpatialRef(), in_layer.GetGeomType()
     )
 
     in_layer_defn = in_layer.GetLayerDefn()
-
+    
+    print('Spatial filter')
     in_layer.SetSpatialFilter(clip_geom)
-    clip_boundary = clip_geom.Boundary()
+    
+
+    
     # Copy fields from memory layer to output dataset
     for i in range(in_layer_defn.GetFieldCount()):
         out_layer.CreateField(in_layer_defn.GetFieldDefn(i))
+    
+    if filter_only:
+        for out_feat in tqdm(in_layer):
+             out_layer.CreateFeature(out_feat)
+        in_layer = None
+        out_layer = None
+        return out_datasource
+    
+        
+    clip_boundary = clip_geom.Boundary()
         
     lost_features = []
     print("start masking")
@@ -225,12 +251,12 @@ def vector_clip(in_layer, clip_geom):
         if not valid:
             lost_features.append(out_feat.GetFID())
 
-        #try:
-        intersection = out_geom.Intersects(clip_boundary)
-        #except Exception as e:
-        #    print(e)
-        #    lost_features.append(out_feat.GetFID())
-        #    continue
+        try:
+            intersection = out_geom.Intersects(clip_boundary)
+        except Exception as e:
+            print(e)
+            lost_features.append(out_feat.GetFID())
+            continue
 
         if intersection:
             intersect = out_geom.Intersection(clip_geom)
@@ -258,12 +284,16 @@ def vector_clip(in_layer, clip_geom):
             pass
         
     in_layer = None
-    out_layer = None
-
+    
     if len(lost_features) > 0:
         print('Lost {} features'.format(len(lost_features)))
         
-    return out_datasource
+    input_vector =  wrap_shape(out_datasource)
+    input_vector.write_geometries('temp', temp_clip)
+    datasource = ogr.Open(temp_clip)
+
+        
+    return datasource
 
 
 def vector_to_geom(vector_path, epsg):
@@ -299,6 +329,12 @@ def vector_to_geom(vector_path, epsg):
 
     return geometry
 
+
+def create_mem_ds():
+    global MEM_NUM
+    mem_datasource = DRIVER_OGR_MEM.CreateDataSource("vector{}".format(MEM_NUM))
+    MEM_NUM = MEM_NUM + 1
+    return mem_datasource
 
 if __name__ == "__main__":
 

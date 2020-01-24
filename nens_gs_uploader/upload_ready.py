@@ -14,14 +14,13 @@ from tqdm import tqdm
 
 # Local imports
 from nens_gs_uploader.project import log_time
-
 # Globals
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
+DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 MEM_NUM = 0
 
 # Exceptions
 ogr.UseExceptions()
-
 
 class FeatureCountFailure(Exception):
     """ Missing an sld"""
@@ -89,14 +88,18 @@ def addPolygon(simple_polygon, content, out_lyr):
 
 
 def fix_geometry(geometry):
-    
+    geom_type = geometry.GetGeometryType()
     # check pointcount if linestring
-    if geometry.GetGeometryType() == ogr.wkbLineString:
-        if len(geometry.GetPointCount()) == 1:
+    if  geom_type == ogr.wkbLineString:
+        if geometry.GetPointCount() == 1:
+            print('Geometry point count of linestring = 1')
             return geometry, False
+        else:
+            pass
         
     # check self intersections
-    geometry = geometry.Buffer(0)
+    if geom_type == ogr.wkbPolygon:
+        geometry = geometry.Buffer(0)
         
     # check slivers
     if not geometry.IsValid():
@@ -120,7 +123,7 @@ def correct(in_layer, layer_name='', epsg=3857):
             4. Fix for self intersections
             
         INPUT: layer, layer_name
-       OUTPUT: corrected layer
+        OUTPUT: out_datasource, layer_name
       """
     
     try:
@@ -169,7 +172,7 @@ def correct(in_layer, layer_name='', epsg=3857):
         
         flatten = False
         geom_name = ogr.GeometryTypeToName(geom_type)
-        if geom_name == "3D Multi Polygon" or geom_name == "3D Line String":
+        if '3D' in geom_name:
             log_time("warning", "geom type: " + geom_name)
             log_time("info", "Flattening to 2D")
             flatten = True
@@ -247,11 +250,10 @@ def correct(in_layer, layer_name='', epsg=3857):
             log_time("warning", "FIDS: {}".format(lost_features))
             
         elif in_feature_count > out_feature_count:
-            raise ValueError("In feature count greater than out feature count")
+            log_time("warning", "In feature count greater than out feature count")
+            
         else:
             pass
-        
-            
             
     except Exception as e:
         print(e)
@@ -260,6 +262,7 @@ def correct(in_layer, layer_name='', epsg=3857):
         mem_layer = None
         mem_datasource = None
         out_layer = None
+        
 
     return out_datasource, layer_name
 

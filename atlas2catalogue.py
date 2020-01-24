@@ -22,7 +22,7 @@ from glob import glob
 from tqdm import tqdm
 from shutil import copyfile
 from itertools import chain
-import configparser
+from configparser import RawConfigParser
 
 # Local imports
 from nens_gs_uploader.postgis import SERVERS
@@ -51,9 +51,9 @@ from nens_gs_uploader.localsecret.localsecret import (
 )
 
 from atlas2catalogue.klimaatatlas import wrap_atlas
+from atlas2catalogue.wmslayers import wmslayers
 
 from nens_raster_uploader.rasterstore import rasterstore
-from nens_raster_uploader.wmslayers import wmslayers
 from nens_raster_uploader.geoblocks import (
     clip_waterschappen,
     clip_gemeentes,
@@ -89,6 +89,63 @@ class VectorNotFound(Exception):
 class ObservationTypeNotInStore(Exception):
     pass
 
+
+def get_parser():
+    """ Return argument parser. """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "inifile", metavar="INIFILE", help="Settings voor inifile."
+    )
+    return parser
+
+class settings_object(object):
+    """Reads settings from inifile settings from command line tool"""
+
+    def __init__(self, ini_file=None, postgis=True, folder=True):
+        if ini_file is not None:
+            config = RawConfigParser()
+            config.read(ini_file)
+            self.ini = ini_file
+            self.ini_location = os.path.dirname(ini_file)
+            self.config = config
+
+            self.set_project()
+
+    def add(self, key, value):
+        setattr(self, key, value)
+
+    def get_postgis_subjects(self):
+        subjects = []
+        for section in self.config.sections()[5:]:
+            for i in self.config.items(section):
+                if i[0] == "out_layer":
+                    subjects.append(i[1])
+
+        return subjects
+
+    def set_project(self):
+        self.set_values("project")
+        #self.set_values("input_directory")
+        self.set_values("tool")
+        
+    def set_postgis(self):
+        self.set_values("input_postgis")
+
+    def set_directory(self):
+        self.set_values("input_directory")
+
+    def set_values(self, section):
+        for key in self.config[section]:
+            value = self.config[section][key]
+            if value == "True":
+                value = True
+            elif value == "False":
+                value = False
+            else:
+                pass
+
+            self.key = value
+            setattr(self, key, value)
 
 def set_log_config(location, name="log"):
     path = os.path.join(location, name)
@@ -396,13 +453,14 @@ def get_uuid_by_organisations(rasters, organisations):
     return rasters
 
 
-def extract_vector_data(vectors, temp_dir, organisation):
+def extract_vector_data(vectors, temp_dir, organisation, meta_only=True):
 
     extract_data_failures = []
     extract_data_succes = []
 
     print("Set geoserver connections")
     gs_dict = set_geoserver_connections(vectors)
+    
 
     print("Extracting vector data")
     for vector in tqdm(vectors):
@@ -416,6 +474,11 @@ def extract_vector_data(vectors, temp_dir, organisation):
             if os.path.exists(meta_path):
                 print("Meta file exists, skipping", subject)
                 continue
+            
+            if meta_only:
+                with open(meta_path, "w") as outfile:
+                    json.dump(vector, outfile)
+                continue     
 
             vector_ds = get_datasource(vector, organisation)
             vector_layer = vector_ds.GetLayerByName(vector["layername"])
@@ -471,7 +534,8 @@ def extract_vector_data(vectors, temp_dir, organisation):
 
 
 def upload_ready(
-    temp_dir, upload_dir, clip_geom, organisation, bo_nummer, epsg
+    temp_dir, upload_dir, clip_geom, organisation, bo_nummer, epsg, dataset,
+    meta_only=True
 ):
 
     upload_ready_succes = []
@@ -494,6 +558,13 @@ def upload_ready(
         meta_data["slug_new"] = "{}:{}_{}_{}".format(
             dataset, bo_nummer, organisation, vector_name_new
         )
+        
+        
+        if meta_only:
+            meta_out = os.path.join(upload_dir, vector_name_new + ".json")
+            with open(meta_out, "w") as out_file:
+                json.dump(meta_data, out_file)
+            continue
 
         feature_store = True
         sld_store = True
@@ -565,7 +636,7 @@ def upload_data(
     ini_file = os.path.join(upload_dir, "nens_gs_uploader.ini")
     ini_file_title = os.path.join(upload_dir, "nens_gs_uploader_titles.ini")
 
-    config = configparser.RawConfigParser()
+    config = RawConfigParser()
     config.read(ini_file)
 
     for vector_path in tqdm(glob(upload_dir + "/*.gpkg")):
@@ -592,7 +663,7 @@ def upload_data(
     )
 
 
-def create_wmslayers(upload_dir, organisation, use_nens=True):
+def create_wmslayers(upload_dir, organisation, dataset, use_nens=True):
 
     wmslayer_failures = []
     wmslayer_succes = []
@@ -646,8 +717,6 @@ def create_wmslayers(upload_dir, organisation, use_nens=True):
                 organisation
             )
 
-        # set dataset
-        dataset = "{}_klimaatatlas".format(organisation)
 
         # download link
         download_url = "{}?&request=GetFeature&typeName={}&OutputFormat=shape-zip".format(
@@ -655,9 +724,9 @@ def create_wmslayers(upload_dir, organisation, use_nens=True):
         )
 
         configuration = {
-            "name": name,
+            "name": name + "_test",
             "description": wmslayer_description,
-            "slug": slug,
+            "slug": slug + "_test",
             "tiled": True,
             "wms_url": url,
             "access_modifier": 0,
@@ -792,28 +861,23 @@ def atlas2catalogue_rasterstores(
     return raster_succes, raster_failures
 
 
-if __name__ == "__main__":
-    # input arugments
-    atlas_name = "westland"
-    area_path = (
-        "C:/Users/chris.kerklaan/Documents/Projecten/westland/westland.shp"
-    )
-    dataset = "westland_klimaatatlas"
-    raster_clip_id = [40]
+def create_catalogue(inifile):
+    """ Returns batch upload shapes for one geoserver """
+    setting = settings_object(inifile)
+    
+    # set logging
+    set_log_config(setting.ini_location)
+    sys.stdout = logger(setting.ini_location)
+    
+    raster_clip_id = [int(setting.raster_clip_id)]
 
-    # project details
-    bo_nummer = "1836"
-    organisation = "westland"
-    project_nummer = "u0305"
-    eigen_naam = "chris.kerklaan"
-    wd = "C:/Users/chris.kerklaan/Documents/Projecten/westland/"
-
-    os.chdir(wd)
-    temp_dir = mk_dir()
-    upload_dir = mk_dir(folder_name="upload")
+    os.chdir(setting.wd)
+    
+    temp_dir = mk_dir(setting.wd)
+    upload_dir = mk_dir(setting.wd, folder_name="upload")
 
     # step 1 get a look inside the atlas
-    data = get_rasters_and_vectors(atlas_name)
+    data = get_rasters_and_vectors(setting.atlas_name)
     unique_data = unique(data)
     vectors = unique_data["vector"]
     rasters = unique_data["raster"]
@@ -826,26 +890,32 @@ if __name__ == "__main__":
     print("Amount of other data: {}".format(len(other_data)))
 
     # get geoserver_data for looking up vector sld's
-    clip_geom = vector_to_geom(area_path, epsg=3857)
+    clip_geom = vector_to_geom(setting.area_path, epsg=3857)
 
     # extract vector data from their respective sources
     extract_succes, extract_failure = extract_vector_data(
-        vectors, temp_dir, organisation
+        vectors, temp_dir, setting.organisatie, meta_only=setting.meta_only
     )
 
     # make them upload ready
     ready_succes, ready_failure = upload_ready(
-        temp_dir, upload_dir, clip_geom, organisation, bo_nummer, epsg=3857
+        temp_dir, upload_dir, clip_geom, 
+        setting.organisatie, 
+        setting.bo_nummer, 
+        epsg=int(setting.epsg), 
+        dataset=setting.dataset,
+        meta_only=setting.meta_only
     )
 
-    # upload them to the geoserver
-    upload_data(
-        upload_dir, bo_nummer, organisation, eigen_naam, project_nummer
-    )
+    if not setting.meta_only:
+        # upload them to the geoserver
+        upload_data(
+            upload_dir, setting.bo_nummer, setting.organisatie, eigen_naam, project_nummer
+        )
 
     # create wms layers
     wmslayer_succes, wmslayer_failures = create_wmslayers(
-        upload_dir, organisation, use_nens=False
+        upload_dir, setting.organisatie,setting.dataset, use_nens=True
     )
 
     # copy rasterstore, add clip and add to dataset
@@ -869,7 +939,94 @@ if __name__ == "__main__":
         rasters,
         raster_clip_id,
         bo_nummer,
-        organisation,
+        organisatie,
         dataset,
         overwrite=False,
     )
+
+
+
+if __name__ == "__main__":
+    create_catalogue(**vars(get_parser().parse_args()))
+    
+    
+    # # input arugments
+    # atlas_name = "hhnk"
+    # area_path = (
+    #     "C:/Users/chris.kerklaan/Documents/Projecten/westland/westland.shp"
+    # )
+    # dataset = "westland_klimaatatlas"
+    # raster_clip_id = [40]
+
+    # # project details
+    # bo_nummer = "1836"
+    # organisatie = "westland"
+    # project_nummer = "u0305"
+    # eigen_naam = "chris.kerklaan"
+    # wd = "C:/Users/chris.kerklaan/Documents/Projecten/westland/"
+
+    # os.chdir(wd)
+    # temp_dir = mk_dir()
+    # upload_dir = mk_dir(folder_name="upload")
+
+    # # step 1 get a look inside the atlas
+    # data = get_rasters_and_vectors(atlas_name)
+    # unique_data = unique(data)
+    # vectors = unique_data["vector"]
+    # rasters = unique_data["raster"]
+    # other_data = unique_data["other"]
+
+    # print("Temporary directory:", temp_dir)
+    # print("Upload directory:", upload_dir)
+    # print("Amount of vectors: {}".format(len(vectors)))
+    # print("Amount of rasters: {}".format(len(rasters)))
+    # print("Amount of other data: {}".format(len(other_data)))
+
+    # # get geoserver_data for looking up vector sld's
+    # clip_geom = vector_to_geom(area_path, epsg=3857)
+
+    # # extract vector data from their respective sources
+    # extract_succes, extract_failure = extract_vector_data(
+    #     vectors, temp_dir, organisatie
+    # )
+
+    # # make them upload ready
+    # ready_succes, ready_failure = upload_ready(
+    #     temp_dir, upload_dir, clip_geom, organisatie, bo_nummer, epsg=3857
+    # )
+
+    # # upload them to the geoserver
+    # upload_data(
+    #     upload_dir, bo_nummer, organisatie, eigen_naam, project_nummer
+    # )
+
+    # # create wms layers
+    # wmslayer_succes, wmslayer_failures = create_wmslayers(
+    #     upload_dir, setting.organisatie, setting.dataset, use_nens=True
+    # )
+
+    # # copy rasterstore, add clip and add to dataset
+    # # cannot find correct stores
+    # organisations = ["Provincie Zuid-Holland", "Nelen & Schuurmans"]
+    # rasters = get_uuid_by_organisations(rasters, organisations)
+
+    # rasters[0]["uuid"] = "197c72b9-3f64-440c-9025-3883fef94316"
+    # rasters[1]["uuid"] = "f28bb892-20cb-4a31-90c8-5f6cd715ddbe"
+    # rasters[2]["uuid"] = "5d3fc11c-5819-419a-85be-a53fa945c926"
+    # rasters[3]["uuid"] = "9b40ef35-05bd-4473-a8cf-83338bdbb210"
+    # rasters[4]["uuid"] = "cf09302b-0228-4220-b5a4-b7b5461f7fcf"
+    # rasters[5]["uuid"] = "0d7fdf72-3f22-40b8-85ab-419acaba446d"
+    # rasters[6]["uuid"] = "5aad9db6-7b71-49aa-9759-7dad26802c3c"
+    # rasters[7]["uuid"] = "f50e8ad6-66cf-4247-9188-7cde3c0e976f"
+    # rasters[7]["slug"] = rasters[7]["slug"].split(",")[1]
+    # rasters[8]["uuid"] = "1d65a4e1-ac2f-4e66-9e52-1d130d870a34"
+    # rasters[9]["uuid"] = "9c6f0130-001b-4747-9c9f-2a65b9370b32"
+
+    # raster_succes, raster_failures = atlas2catalogue_rasterstores(
+    #     rasters,
+    #     raster_clip_id,
+    #     bo_nummer,
+    #     organisatie,
+    #     dataset,
+    #     overwrite=False,
+    # )

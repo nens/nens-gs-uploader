@@ -9,43 +9,50 @@ production_lizard = {
     "port": "5432",
     "database": "productie-geoserver",
     "username": "productie-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
 }
 production_klimaatatlas = {
     "host": "p-product-db-d1.external-nens.local",
     "port": "5432",
     "database": "klimaatatlas-geoserver-v2",
     "username": "klimaatatlas-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
+}
+production_flooding = {
+    "host": "xxxx",
+    "port": "5432",
+    "database": "xx",
+    "username": "xx",
+    "password": "ww",
 }
 project_klimaatatlas = {
     "host": "p-project-db-d1.external-nens.local",
     "port": "5432",
-    "database": "klimaatatlas-project-geoserver",
+    "database": "p-project-map-d1",
     "username": "klimaatatlas-project-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
 }
 project_lizard = {
     "host": "p-project-db-d1.external-nens.local",
     "port": "5432",
     "database": "p-project-map-d1",
     "username": "klimaatatlas-project-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
 }
 staging = {
     "host": "s-project-db-d1.external-nens.local",
     "port": "5432",
     "database": "staging-project-geoserver",
     "username": "staging-project-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
 }
 production_klimaatatlas_v1 = {
     "host": "p-product-db-d1.external-nens.local",
     "port": "5432",
     "database": "klimaatatlas-geoserver",
     "username": "klimaatatlas-geoserver",
-    "password": "nog invullen",
+    "password": "ww",
 }
 
-username = "nog invullen"
-password = "nog invullen"
+username = "username"
+password = "wachtwoord"

@@ -68,7 +68,7 @@ def connect2pg_database(database):
     return connection.ogr_connection()
 
 
-def copy2pg_database(database, in_layer, layer_name, schema="public"):
+def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
     options = [
         "OVERWRITE=YES",
         "SCHEMA={}".format(schema),
@@ -77,31 +77,33 @@ def copy2pg_database(database, in_layer, layer_name, schema="public"):
         "PRECISION=NO",
     ]
     try:
+        geom_type = in_layer.GetGeomType()
+
         ogr.RegisterAll()
-        new_layer = database.datasource.CreateLayer(
-            layer_name, in_layer.GetSpatialRef(), ogr.wkbUnknown, options
+        new_layer = datasource.CreateLayer(
+            layer_name, in_layer.GetSpatialRef(), geom_type, options
         )
         for x in range(in_layer.GetLayerDefn().GetFieldCount()):
             new_layer.CreateField(in_layer.GetLayerDefn().GetFieldDefn(x))
 
         new_layer.StartTransaction()
         for x in tqdm(range(in_layer.GetFeatureCount())):
-            try: 
+            # try: 
                 new_feature = in_layer.GetFeature(x)
                 new_feature.SetFID(-1)
                 new_layer.CreateFeature(new_feature)
                 if x % 128 == 0:
                     new_layer.CommitTransaction()
                     new_layer.StartTransaction()
-            except Exception as e:
-                print("Got exception", e, "skipping feature")
+            # except Exception as e:
+            #     print("Got exception", e, "skipping feature")
                 
         new_layer.CommitTransaction()
 
     except Exception as e:
         print("Got exception", e, "trying copy layer")
 
-        new_layer = database.datasource.CopyLayer(
+        new_layer = datasource.CopyLayer(
             in_layer, layer_name, options
         )
 
@@ -111,9 +113,9 @@ def copy2pg_database(database, in_layer, layer_name, schema="public"):
         new_layer = None
 
 
-def add_metadata_pgdatabase(setting, database):
+def add_metadata_pgdatabase(setting, datasource):
 
-    metadata_layer = database.datasource.GetLayer("metadata")
+    metadata_layer = datasource.GetLayer("metadata")
 
     # if exists delete
     metadata_layer.StartTransaction()

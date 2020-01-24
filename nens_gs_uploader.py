@@ -5,10 +5,11 @@ Created on Wed Jul 24 15:39:13 2019
 @author: chris.kerklaan - N&S
 
 TODOs:
-    1. Code review
+    1. Fix geomtries/ correct werkt nog niet goed
+    2. Check feature counts after correction
     2. Extra checks op shapefiles 
     3. Check slds werken nog niet goed
-    4. 3D dimensions 
+    
 """
 # system imports
 import os
@@ -25,7 +26,7 @@ from glob import glob
 
 # Local imports
 from nens_gs_uploader.postgis import (
-    SERVERS,
+    REST,
     PG_DATABASE,
     copy2pg_database,
     add_metadata_pgdatabase,
@@ -67,7 +68,7 @@ for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
 # Test arguments
-# inifile=  'C:/Users/chris.kerklaan/tools/instellingen/flooding/nens_gs_uploader.ini'
+# inifile=  'C:/Users/chris.kerklaan/tools/instellingen/schouwen_duiveland/nens_gs_uploader.ini'
 # sys.path.append('C:/Users/chris.kerklaan/tools')
 
 
@@ -171,9 +172,10 @@ class settings_object(object):
 
 
 def add_output_settings(setting, onderwerp, in_path):
-    """ Returns geoserver settings in an organized manner"""
-    """conform https://sites.google.com/nelen-schuurmans.nl/handleiding-klimaatatlas/data-protocol"""
-
+    """ Returns geoserver settings in an organized manner
+    conform https://sites.google.com/nelen-schuurmans.nl/handleiding-klimaatatlas/data-protocol
+    """
+    
     # layer names, workspace names en server names
     if "PRODUCTIE" in setting.server_naam:
         layer_name = "{}_{}_{}".format(
@@ -212,10 +214,9 @@ def add_output_settings(setting, onderwerp, in_path):
         database_name = None
         schema_name = "public"
 
-    elif setting.product_naam == "dashboard":
+    elif setting.product_naam == "lizard":
         abstract_data = """
-        De laag {omschrijving} komt van {bron}. Voor meer informatie over 
-        deze laag, ga naar het dashboard. 
+        De laag {omschrijving} komt van {bron}. 
         """.format(
             omschrijving=onderwerp.lower(), bron=setting.organisatie.lower()
         )
@@ -259,7 +260,7 @@ def add_output_settings(setting, onderwerp, in_path):
             "password": setting.password,
         }
         setting.in_layer = in_path
-        setting.skip = False
+        setting.skip = setting.skip
 
     elif setting.use_directory and os.path.isfile(in_path):
 
@@ -274,10 +275,12 @@ def add_output_settings(setting, onderwerp, in_path):
         try:
             setting.set_values(os.path.basename(in_path))
             if not setting.skip:
+                print('Found additional directory settings')
                 if not setting.abstract == "none":
                     abstract_data = setting.abstract
                 if not setting.title == "none":
                     title_data = setting.title
+                setting.skip = setting.skip
 
         except Exception:
             pass
@@ -317,6 +320,7 @@ def add_output_settings(setting, onderwerp, in_path):
         setting.overwrite_abstract = True
         setting.overwrite_feature = True
         setting.overwrite_sld = True
+        setting.overwrite_title = True
 
     # Outputs geoserver
     setting.workspace_name = workspace_name
@@ -330,6 +334,7 @@ def add_output_settings(setting, onderwerp, in_path):
     setting.database_name = database_name
     setting.schema_name = schema_name
     setting.metadata = metadata
+    setting.set_metadata = False
 
     return setting
 
@@ -405,14 +410,17 @@ def upload(setting):
 
     if setting.use_mask:
         log_time("info", setting.layer_name, "1.2 vector corrections - mask")
-        vector_geom = vector_to_geom(setting.mask_path)
-        datasource = vector_clip(datasource[0], vector_geom)
+        vector_geom = vector_to_geom(setting.mask_path, setting.epsg)
+        datasource = vector_clip(datasource, vector_geom, setting.ini_location)
 
-    shape = wrap_shape(datasource)
     setting.layer_name = layer_name
 
-    if shape.layer.GetFeatureCount() == 0:
+
+    if datasource[0].GetFeatureCount() == 0:
         log_time("error", setting.layer_name, "vector feature count is 0")
+    if datasource == None:
+        log_time("error", setting.layer_name, "Datasource is none")
+        
 
     log_time("info", setting.layer_name, "2. Upload shape to pg database.")
     pg_details = PG_DATABASE[setting.server_naam]
@@ -421,7 +429,7 @@ def upload(setting):
     pg_database = wrap_shape(pg_details)
 
     # set metadata
-    if not setting.product_naam == "flooding":
+    if not setting.product_naam == "flooding" and setting.set_metadata:
         add_metadata_pgdatabase(setting, pg_database)
 
     schema_layers = [layer.split(".")[-1] for layer in pg_database.layers]
@@ -429,7 +437,7 @@ def upload(setting):
 
     if not pg_layer_present or setting.overwrite_postgres:
         copy2pg_database(
-            pg_database, shape.layer, setting.layer_name, setting.schema_name
+            pg_database.datasource, datasource[0], setting.layer_name, setting.schema_name
         )
 
     else:
@@ -503,7 +511,7 @@ def upload(setting):
         server.write_title(setting.title_data)
 
     log_time("info", setting.layer_name, "11. Returning wms, slug")
-    wms = SERVERS[setting.server_naam].replace(
+    wms = REST[setting.server_naam].replace(
         "rest", "{}/wms".format(setting.workspace_name)
     )
     slug = "{}:{}".format(setting.workspace_name, setting.layer_name)

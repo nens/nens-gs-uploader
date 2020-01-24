@@ -34,7 +34,8 @@ from nens_raster_uploader.project import (
 
 from nens_raster_uploader.rasterstore import rasterstore
 from nens_raster_uploader.edits import retile
-#from nens_raster_uploader.geoblocks import clip
+
+# from nens_raster_uploader.geoblocks import clip
 
 # Logging configuration options
 for handler in logging.root.handlers[:]:
@@ -97,9 +98,13 @@ def add_output_settings(setting):
     file_name = get_file_name_from_path(setting.in_path)
     setting.set_values(file_name)
 
-
+    if setting.project:
+        add_on = "p"
+    else:
+        add_on = setting.bo_nummer
+        
     in_name = "{}_{}_{}".format(
-        setting.bo_nummer, setting.organisatie, setting.onderwerp
+        add_on, setting.organisatie, setting.onderwerp
     )
     print(in_name)
     abstract_data = """
@@ -118,22 +123,22 @@ def add_output_settings(setting):
 
     configuration = {
         "name": in_name,
-        "organisation": setting.store.get_nens_id(),
+        "organisation": setting.store.get_organisation_uuid("nelen"),
         "observation_type": setting.observation_type,
         "description": abstract_data,
         "supplier": setting.eigen_naam,
         "supplier_code": in_name,
         "aggregation_type": 2,
         "options": styles,
-        "acces_modifier": 0, # public
+        "acces_modifier": 0,  # public
         "rescalable": str(setting.rescalable).lower()
-      #  "source":  
+        #  "source":
     }
 
     setting.configuration = configuration
 
     print_dictionary(setting.__dict__, "Settings")
-    
+
     return setting
 
 
@@ -147,8 +152,7 @@ def batch_upload(inifile):
     sys.stdout = logger(setting.ini_location)
 
     in_paths = glob(setting.directory + "/*.tif")
-    in_paths = in_paths  + glob(setting.directory + "/*.vrt")
-
+    in_paths = in_paths + glob(setting.directory + "/*.vrt")
 
     present_paths = []
     for path in in_paths:
@@ -169,15 +173,15 @@ def batch_upload(inifile):
 
         if not setting.skip:
 
-#            try:
-                succes[setting.onderwerp] = upload(setting)
-#
-#            except Exception as e:
-#                print(e)
-#                failures[setting.onderwerp] = e
+            #            try:
+            succes[setting.onderwerp] = upload(setting)
+    #
+    #            except Exception as e:
+    #                print(e)
+    #                failures[setting.onderwerp] = e
 
-    #log_time("info", "sleeping to decrease load on server....")
-    #sleep(30)
+    # log_time("info", "sleeping to decrease load on server....")
+    # sleep(30)
 
     print_dictionary(succes, "Succes")
     print_dictionary(failures, "Failures")
@@ -185,14 +189,20 @@ def batch_upload(inifile):
 
 def upload(setting):
 
-    if setting.overwrite_store:
-        _json, store_exists = setting.store.get_store(
-                "nelen-schuurmans:" + setting.configuration['name'])
+    slug = "nelen-schuurmans:" + setting.configuration["name"]
+    setting.configuration['slug'] = slug
+    
+    # if setting.overwrite_store:
+    #     _json, store_exists = setting.store.get_store(
+    #                     search_terms=slug,
+    #                     slug=slug, 
+    #                     method="search")
+        
 
-        if store_exists:
-            setting.store.delete_store(_json["uuid"])
-        else:
-            print("store does not yet exist")
+    #     if store_exists:
+    #         setting.store.delete_store(_json["uuid"])
+    #     else:
+    #         print("store does not yet exist")
 
     #  create store
     if setting.update_metadata_only:
@@ -205,9 +215,9 @@ def upload(setting):
 
     else:
         wms = setting.store.create(setting.configuration, True)
-#        setting.store.post_data(setting.in_path)
+        #        setting.store.post_data(setting.in_path)
         for raster_part in retile(setting.in_path):
-#            pass
+            #            pass
             setting.store.post_data(raster_part)
     sleep(15)
 

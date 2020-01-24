@@ -10,14 +10,14 @@ Created on Mon Sep 23 10:29:05 2019
 
 # System imports
 import sys
-sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
+#sys.path.append("C:/Users/chris.kerklaan/tools")
 
 # Third-party imports
 import json
 from requests import get, post, codes, delete
 
 # Local imports
-from lizard.localsecret import username, password
+from nens_gs_uploader.localsecret.localsecret import username, password
 
 class wmslayers(object):
     def __init__(self, username=username, password=password):

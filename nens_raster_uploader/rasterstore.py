@@ -3,7 +3,7 @@
 
 # System imports
 import sys
-sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
+#sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
 
 # Third-party imports
 import json
@@ -11,7 +11,7 @@ from requests import get, post, codes, delete
 from tqdm import tqdm
 
 # Local imports
-from lizard.localsecret import username, password
+from nens_gs_uploader.localsecret.localsecret import username, password
 
 class rasterstore(object):
     def __init__(self, username=username, password=password):
@@ -19,7 +19,7 @@ class rasterstore(object):
         self.password = password
         self.raster_url = "https://demo.lizard.net/api/v4/rasters/"
         self.search_url = "https://demo.lizard.net/api/v4/search/"
-        self.raster_uuid = "https://demo.lizard.net/api/v4/rasters/{uuid}/"
+        #self.raster_uuid = "https://demo.lizard.net/api/v4/rasters/{uuid}/"
         self.organisation_url = "https://demo.lizard.net/api/v4/organisations/"
 
         self.post_headers = {
@@ -28,7 +28,7 @@ class rasterstore(object):
             "Content-Type": "application/json",
         }
         self.get_headers = {"username": username,
-                             "password": password}
+                            "password": password}
 
     def get_organisation_uuid(self, organisation):
         r = get(
@@ -188,11 +188,11 @@ class rasterstore(object):
     def post_data(self, path):
         print(path)
         url = self.raster_url + self.raster_uuid + "/data/"
-
+        
         r = post(
             url=url,
             files={"file": open(path, "rb")},
-            headers=self.post_headers,
+            headers=self.get_headers,
         )
 
         if not r.status_code == codes.ok:
