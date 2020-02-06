@@ -1,20 +1,19 @@
 from setuptools import setup
 
-version = "0.1.dev0"
+version = "0.2.dev0"
 
-long_description = "\n\n".join(
-    [open("README.rst").read(), open("CHANGES.rst").read()]
-)
+long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
-install_requires = []
-
-tests_require = [
-    "pytest",
-    "mock",
-    "pytest-cov",
-    "pytest-flakes",
-    "pytest-black",
+install_requires = [
+    "configparser==3.7.4",
+    "GDAL==2.4.1",
+    "gsconfig-py3==1.0.7",
+    "tqdm==4.40.2",
+    "json5==0.8.5",
+    "psycopg2==2.8.4",
 ]
+
+tests_require = ["pytest", "mock", "pytest-cov", "pytest-flakes", "pytest-black"]
 
 setup(
     name="nens-gs-uploader",
@@ -36,7 +35,7 @@ setup(
     extras_require={"test": tests_require},
     entry_points={
         "console_scripts": [
-            "run-nens-gs-uploader = nens_gs_uploader.scripts:main"
+            "run-nens-gs-uploader = nens_gs_uploader.nens_gs_uploader:main"
         ]
     },
 )

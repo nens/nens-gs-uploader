@@ -6,90 +6,100 @@ Created on Tue Sep 17 13:48:26 2019
 https://dask-geomodeling.readthedocs.io/en/latest/raster.html
 """
 
+
 def clip_gemeentes(input_block, gemeentes):
     nummers = []
-    
+
     for gemeente in gemeentes:
         nummers.append([gemeente, 1])
-            
+
     clip_block = {
-                "gemeente_ids": [
-                    "geoblocks.raster.sources.RasterStoreSource",
-                    "file:///mnt/rastprod/stores/nelen-schuurmans/2019-gemeente-ids-3yz1ll9j"
-                ],
-                "area_of_interest_1": [
-                    "geoblocks.raster.misc.Reclassify",
-                    "gemeente_ids", nummers + [[50000, 0]],
-                    True ],
-                "endpoint": [
-                "geoblocks.raster.misc.Clip",
-                "{}".format(input_block),
-                "area_of_interest_1"]
-      }
-            
+        "gemeente_ids": [
+            "geoblocks.raster.sources.RasterStoreSource",
+            "file:///mnt/rastprod/stores/nelen-schuurmans/2019-gemeente-ids-3yz1ll9j",
+        ],
+        "area_of_interest_1": [
+            "geoblocks.raster.misc.Reclassify",
+            "gemeente_ids",
+            nummers + [[50000, 0]],
+            True,
+        ],
+        "endpoint": [
+            "geoblocks.raster.misc.Clip",
+            "{}".format(input_block),
+            "area_of_interest_1",
+        ],
+    }
+
     return clip_block
+
 
 def clip_provincies(input_block, provincies):
     nummers = []
-    
+
     for provincie in provincies:
         nummers.append([provincie, 1])
-            
+
     clip_block = {
-                "gemeente_ids": [
-                    "geoblocks.raster.sources.RasterStoreSource",
-                    "file:///mnt/rastprod/stores/nelen-schuurmans/2019-provincie-ids-9dwte8yk"
-                ],
-                "area_of_interest_1": [
-                    "geoblocks.raster.misc.Reclassify",
-                    "gemeente_ids", nummers + [[50000, 0]],
-                    True ],
-                "endpoint": [
-                "geoblocks.raster.misc.Clip",
-                "{}".format(input_block),
-                "area_of_interest_1"]
-      }
-            
+        "gemeente_ids": [
+            "geoblocks.raster.sources.RasterStoreSource",
+            "file:///mnt/rastprod/stores/nelen-schuurmans/2019-provincie-ids-9dwte8yk",
+        ],
+        "area_of_interest_1": [
+            "geoblocks.raster.misc.Reclassify",
+            "gemeente_ids",
+            nummers + [[50000, 0]],
+            True,
+        ],
+        "endpoint": [
+            "geoblocks.raster.misc.Clip",
+            "{}".format(input_block),
+            "area_of_interest_1",
+        ],
+    }
+
     return clip_block
 
 
 def clip_waterschappen(input_block, waterschappen):
     nummers = []
-    
+
     for waterschap in waterschappen:
         nummers.append([waterschap, 1])
-            
+
     clip_block = {
-                "gemeente_ids": [
-                    "geoblocks.raster.sources.RasterStoreSource",
-                    "file:///mnt/rastprod/stores/nelen-schuurmans/2019-waterschappen-ids-8mqsh79x"
-                ],
-                "area_of_interest_1": [
-                    "geoblocks.raster.misc.Reclassify",
-                    "gemeente_ids", nummers + [[50000, 0]],
-                    True ],
-                "endpoint": [
-                "geoblocks.raster.misc.Clip",
-                "{}".format(input_block),
-                "area_of_interest_1"]
-      }
-            
+        "gemeente_ids": [
+            "geoblocks.raster.sources.RasterStoreSource",
+            "file:///mnt/rastprod/stores/nelen-schuurmans/2019-waterschappen-ids-8mqsh79x",
+        ],
+        "area_of_interest_1": [
+            "geoblocks.raster.misc.Reclassify",
+            "gemeente_ids",
+            nummers + [[50000, 0]],
+            True,
+        ],
+        "endpoint": [
+            "geoblocks.raster.misc.Clip",
+            "{}".format(input_block),
+            "area_of_interest_1",
+        ],
+    }
+
     return clip_block
 
-def uuid_store(uuid):
-    return ({'graph':
-                {"store":
-                    ["lizard_nxt.blocks.LizardRasterSource",uuid]
-                },
-            'name':'store'
-            })
-    
 
-#    
+def uuid_store(uuid):
+    return {
+        "graph": {"store": ["lizard_nxt.blocks.LizardRasterSource", uuid]},
+        "name": "store",
+    }
+
+
 #
 #
 #
-#clip = {
+#
+# clip = {
 #            "gemeente_ids": [
 #                "geoblocks.raster.sources.RasterStoreSource",
 #                "file:///119-fs-c02/raster-production/stores/nelen-schuurmans/gemeente-ids-2019-vdssnjxo"
@@ -138,9 +148,9 @@ def uuid_store(uuid):
 #            "geoblocks.raster.misc.Clip",
 #            "{input_block}",
 #            "area_of_interest_1"]
-#  }    
-#        
-#clip = {
+#  }
+#
+# clip = {
 #        "graph": {
 #            "input_block": [
 #                "geoblocks.raster.sources.RasterStoreSource",
@@ -201,26 +211,26 @@ def uuid_store(uuid):
 #            "area_of_interest_1"]
 #        },
 #        "name": "endpoint"
-#    }    
+#    }
 #
-#work = {  "graph": {
+# work = {  "graph": {
 #                              "input":  [
 #                                        "geoblocks.raster.sources.RasterStoreSource",
 #                                        "file:///119-fs-c02/raster-production/stores/nelen-schuurmans/test_test_ghg_2050"
 #                                ],
-#                                      
+#
 #                              "end":[
 #                                  "geoblocks.raster.misc.MaskBelow",
 #                                  "input",
 #                                  0.1
 #                                ]
-#                              
+#
 #                            },
 #                    "name": "end"
-#                
+#
 #                }
-#        
-#clip_block = {
+#
+# clip_block = {
 #            "graph": {
 #                "input_raster": [
 #                    "geoblocks.raster.sources.RasterStoreSource",
@@ -244,5 +254,4 @@ def uuid_store(uuid):
 #                "area_of_interest_1"]
 #            },
 #            "name": "endpoint"
-#        } 
-            
+#        }

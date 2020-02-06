@@ -45,9 +45,7 @@ for handler in logging.root.handlers[:]:
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
@@ -102,23 +100,18 @@ def add_output_settings(setting):
         add_on = "p"
     else:
         add_on = setting.bo_nummer
-        
-    in_name = "{}_{}_{}".format(
-        add_on, setting.organisatie, setting.onderwerp
-    )
+
+    in_name = "{}_{}_{}".format(add_on, setting.organisatie, setting.onderwerp)
     print(in_name)
     abstract_data = """
         De laag {omschrijving} komt van {bron}. Voor meer informatie over 
         deze laag, ga naar de klimaatatlas www.{bron}.klimaatatlas.net. 
         """.format(
-        omschrijving=setting.onderwerp.lower(),
-        bron=setting.organisatie.lower(),
+        omschrijving=setting.onderwerp.lower(), bron=setting.organisatie.lower()
     )
 
     styles = {
-        "styles": "{}:{}:{}".format(
-            setting.style, setting.style_min, setting.style_max
-        )
+        "styles": "{}:{}:{}".format(setting.style, setting.style_min, setting.style_max)
     }
 
     configuration = {
@@ -190,14 +183,13 @@ def batch_upload(inifile):
 def upload(setting):
 
     slug = "nelen-schuurmans:" + setting.configuration["name"]
-    setting.configuration['slug'] = slug
-    
+    setting.configuration["slug"] = slug
+
     # if setting.overwrite_store:
     #     _json, store_exists = setting.store.get_store(
     #                     search_terms=slug,
-    #                     slug=slug, 
+    #                     slug=slug,
     #                     method="search")
-        
 
     #     if store_exists:
     #         setting.store.delete_store(_json["uuid"])

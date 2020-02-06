@@ -29,7 +29,7 @@ progress = gdal.TermProgress_nocb
 
 # Global within script
 REST = {
-    "STAGING": "https://maps2.staging.lizard.net/geoserver/rest",
+    "STAGING": "https://maps2.staging.lizard.net/geoserver/rest/",
     "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/rest/",
     "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/rest/",
     "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/rest/",
@@ -86,26 +86,26 @@ def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
         for x in range(in_layer.GetLayerDefn().GetFieldCount()):
             new_layer.CreateField(in_layer.GetLayerDefn().GetFieldDefn(x))
 
+        #             shape.write(datasource[0],"C:/Users/chris.kerklaan/Documents/Projecten/westland/clip_test5.shp")
+        in_layer.ResetReading()
         new_layer.StartTransaction()
-        for x in tqdm(range(in_layer.GetFeatureCount())):
-            # try: 
-                new_feature = in_layer.GetFeature(x)
+        for fid in tqdm(range(in_layer.GetFeatureCount())):
+            try:
+                new_feature = in_layer.GetFeature(fid)
                 new_feature.SetFID(-1)
                 new_layer.CreateFeature(new_feature)
                 if x % 128 == 0:
                     new_layer.CommitTransaction()
                     new_layer.StartTransaction()
-            # except Exception as e:
-            #     print("Got exception", e, "skipping feature")
-                
+            except Exception as e:
+                print("Got exception", e, "skipping feature")
+
         new_layer.CommitTransaction()
 
     except Exception as e:
         print("Got exception", e, "trying copy layer")
 
-        new_layer = datasource.CopyLayer(
-            in_layer, layer_name, options
-        )
+        new_layer = datasource.CopyLayer(in_layer, layer_name, options)
 
     finally:
         if new_layer.GetFeatureCount() == 0:
@@ -135,5 +135,6 @@ def add_metadata_pgdatabase(setting, datasource):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append("C:/Users/chris.kerklaan/tools")
     inifile = "C:/Users/chris.kerklaan/tools/instellingen/meerdijk/nens_gs_uploader.ini"

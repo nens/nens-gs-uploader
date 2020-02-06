@@ -6,7 +6,6 @@ Created on Mon Jul 22 21:39:39 2019
 """
 
 # Third-party imports
-import csv
 import requests
 import os
 import re
@@ -23,65 +22,65 @@ from nens_gs_uploader.postgis import REST
 class wrap_geoserver:
     """ Geoserver (gsconfig) wrapper """
 
-    def __init__(self, geoserver_name, username=username, password=password, easy=False):
+    def __init__(
+        self, geoserver_name, username=username, password=password, easy=False
+    ):
+        if geoserver_name in list(REST.keys()):
+            self.path = REST[geoserver_name]
+        else:
+            self.path = geoserver_name
+
         self.name = geoserver_name
-        self.path = REST[geoserver_name]
         self.catalog = Catalog(self.path, username, password)
-        
-        
+
         if not easy:
             self.layers = []
             self.layer_names = []
-    
+
             for layer in self.catalog.get_layers():
                 self.layers.append(layer)
                 self.layer_names.append(layer.name)
-    
+
             self.stores = [store for store in self.catalog.get_stores()]
             self.store_names = [store.name for store in self.stores]
-    
+
             styles = []
             self.workspaces = []
             self.workspace_names = []
-    
+
             for workspace in self.catalog.get_workspaces():
                 styles = styles + self.catalog.get_styles(workspace)
                 self.workspace_names.append(workspace._name)
                 self.workspaces.append(workspace)
-    
-    
+
             self.styles = styles + [style for style in self.catalog.get_styles()]
             self.style_names = [style.name for style in self.styles]
 
-    def unpack(self, workspace_name, store_type='datastore'):
+    def unpack(self, workspace_name, store_type="datastore"):
         layers_and_styles = {}
         features = []
         workspace = self.get_workspace(workspace_name)
-        
-        if store_type == 'datastore':
+
+        if store_type == "datastore":
             store_url = workspace.datastore_url
-        elif store_type == 'coveragestore':
+        elif store_type == "coveragestore":
             store_url = workspace.coveragestore_url
         else:
-            print('No correct store given')
-        
-        for datastore in tqdm(get(store_url, 'name')):
-            url = "{}workspaces/{}/datastores/{}".format(
-                                        self.path,
-                                     workspace.name,
-                                    datastore)
-            features = features + get(url, between_quotes=True)
-        
-        for feature in features:
-            layer_name =  os.path.basename(feature).split(".")[0]
-            self.get_layer(self.get_slug(workspace.name, layer_name))
-            layers_and_styles[layer_name] =self.layer.default_style
-            
-        setattr(self, workspace_name +"_data",  layers_and_styles)
-        return layers_and_styles 
+            print("No correct store given")
 
-        
-        
+        for datastore in tqdm(get(store_url, "name")):
+            url = "{}workspaces/{}/datastores/{}".format(
+                self.path, workspace.name, datastore
+            )
+            features = features + get(url, between_quotes=True)
+
+        for feature in features:
+            layer_name = os.path.basename(feature).split(".")[0]
+            self.get_layer(self.get_slug(workspace.name, layer_name))
+            layers_and_styles[layer_name] = self.layer.default_style
+
+        setattr(self, workspace_name + "_data", layers_and_styles)
+        return layers_and_styles
 
     def get_layer(self, layer):
         self.layer = self.catalog.get_layer(layer)
@@ -89,6 +88,7 @@ class wrap_geoserver:
         self.layer_name = self.layer.resource.name
         self.sld_name = self.layer.default_style.name
         self.sld_body = self.layer.default_style.sld_body
+        self.latlon_bbox = self.layer.resource.latlon_bbox
 
     def get_store(self, layer):
         self.store = self.layer.resource._store
@@ -128,9 +128,7 @@ class wrap_geoserver:
     def create_postgis_datastore(self, store_name, workspace_name, pg_data):
 
         try:
-            self.store = self.catalog.get_store(
-                store_name, self.workspace_name
-            )
+            self.store = self.catalog.get_store(store_name, self.workspace_name)
             print("store within workspace exists, using existing store")
 
         except Exception as e:
@@ -148,14 +146,10 @@ class wrap_geoserver:
             )
 
             self.save(ds)
-            self.store = self.catalog.get_store(
-                store_name, self.workspace_name
-            )
+            self.store = self.catalog.get_store(store_name, self.workspace_name)
             self.store_name = store_name
 
-    def publish_layer(
-        self, layer_name, workspace_name, overwrite=False, epsg="3857"
-    ):
+    def publish_layer(self, layer_name, workspace_name, overwrite=False, epsg="3857"):
 
         layer_exists = layer_name in self.layer_names
         # if layer_name in self.workspace_layers[workspace_name]:
@@ -210,9 +204,7 @@ class wrap_geoserver:
     def upload_shapefile(self, layer_name, shapefile_path):
         path = shapefile_path.split(".shp")[0]
         shapefile = shapefile_and_friends(path)
-        ft = self.catalog.create_featurestore(
-            layer_name, shapefile, self.workspace
-        )
+        ft = self.catalog.create_featurestore(layer_name, shapefile, self.workspace)
         self.save(ft)
 
     def upload_sld(self, sld_name, workspace_name, sld, overwrite=True):
@@ -227,18 +219,14 @@ class wrap_geoserver:
 
         if not style_exists:
             try:
-                self.catalog.create_style(
-                    sld_name, sld, False, workspace_name, "sld11"
-                )
+                self.catalog.create_style(sld_name, sld, False, workspace_name, "sld11")
             except Exception as e:
                 print(e)
 
                 style = self.catalog.get_style(sld_name, workspace_name)
                 self.delete(style)
                 self.reload()
-                self.catalog.create_style(
-                    sld_name, sld, False, workspace_name, "sld10"
-                )
+                self.catalog.create_style(sld_name, sld, False, workspace_name, "sld10")
             self.style_name = sld_name
 
         else:
@@ -246,9 +234,7 @@ class wrap_geoserver:
                 print("Style already exists, using current style")
                 self.style_name = sld_name
 
-    def set_sld_for_layer(
-        self, workspace_name=None, style_name=None, use_custom=False
-    ):
+    def set_sld_for_layer(self, workspace_name=None, style_name=None, use_custom=False):
         if not use_custom:
             workspace_name = self.workspace_name
             style_name = self.style_name
@@ -278,7 +264,7 @@ class wrap_geoserver:
             self.style = self.catalog.get_style(self.layer_slug)
         else:
             self.style = self.catalog.get_style(layer_slug)
-            
+
         self.sld_body = self.style.sld_body
         return self.sld_body
 
@@ -293,17 +279,17 @@ def get(url, _type="a", between_quotes=False):
     for i in soup.find_all(_type):
         i = str(i)
         if between_quotes:
-            _list = _list + re.findall('"([^"]*)"', i) 
+            _list = _list + re.findall('"([^"]*)"', i)
         else:
             name = i.split("<{}>".format(_type))[-1]
             name = name.split("</{}>".format(_type))[0]
             _list.append(name)
-    
+
     return _list
 
 
 if __name__ == "__main__":
-#    fl = wrap_geoserver("PRODUCTIE_FLOODING")
-#    ka = wrap_geoserver("PRODUCTIE_KLIMAATATLAS")
-#    ka.write_title
+    #    fl = wrap_geoserver("PRODUCTIE_FLOODING")
+    #    ka = wrap_geoserver("PRODUCTIE_KLIMAATATLAS")
+    #    ka.write_title
     pass

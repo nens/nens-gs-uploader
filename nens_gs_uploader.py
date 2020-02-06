@@ -5,15 +5,15 @@ Created on Wed Jul 24 15:39:13 2019
 @author: chris.kerklaan - N&S
 
 TODOs:
+    1. toevoegen wmslayers
     1. Fix geomtries/ correct werkt nog niet goed
-    2. Check feature counts after correction
-    2. Extra checks op shapefiles 
-    3. Check slds werken nog niet goed
+    2. Check slds werken nog niet goed
     
 """
 # system imports
 import os
 import sys
+import json
 import logging
 from time import sleep
 from configparser import RawConfigParser
@@ -38,13 +38,12 @@ from nens_gs_uploader.project import (
     print_list,
     print_dictionary,
 )
-from nens_gs_uploader.vector import vector_to_geom, vector_clip, wrap_shape
+from nens_gs_uploader.vector import vector_to_geom, wrap_shape
 
 from nens_gs_uploader.wrap import wrap_geoserver
 from nens_gs_uploader.sld import wrap_sld
 from nens_gs_uploader.sld import replace_sld_field_based_on_shape
-from nens_gs_uploader.upload_ready import correct
-from nens_gs_uploader.wmslayers import wmslayers
+from atlas2catalogue.wmslayers import wmslayers
 
 # Globals
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
@@ -68,21 +67,37 @@ for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
 # Test arguments
-# inifile=  'C:/Users/chris.kerklaan/tools/instellingen/schouwen_duiveland/nens_gs_uploader.ini'
+# inifile=  'C:/Users/chris.kerklaan/tools/nens_gs_uploader/data/nens_gs_uploader.ini'
 # sys.path.append('C:/Users/chris.kerklaan/tools')
 
 
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
-def get_subject_from_path(path):
-    return os.path.basename(path).split(".")[0]
+def has_numbers(string):
+    return any(char.isdigit() for char in string)
+
+
+def get_subject_from_name(name, organisation):
+    relevant = []
+    for count, part in enumerate(name.split("_")):
+        is_organisation = organisation in part
+        if (count == 0) and (not has_numbers(part)) and (not is_organisation):
+            relevant.append(part)
+        elif not is_organisation:
+            relevant.append(part)
+        else:
+            pass
+
+    return "_".join(relevant)
+
+
+def get_subject_from_path(path, organisation):
+    return get_subject_from_name(os.path.basename(path).split(".")[0], organisation)
 
 
 def get_standard_sld(sld_name):
@@ -93,13 +108,21 @@ def get_paths_and_subjects(setting, source):
     if source == "directory":
         in_paths = glob(setting.directory + "/*.shp")
         in_paths = in_paths + glob(setting.directory + "/*.gpkg")
+        subjects = [
+            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
+        ]
 
-        subjects = [get_subject_from_path(in_path) for in_path in in_paths]
     elif source == "postgis":
         in_paths = setting.config.sections()[5:]
         subjects = setting.get_postgis_subjects()
     else:
         print("choose source")
+
+    if setting.wms_layer_only:
+        in_paths = glob(setting.directory + "/*.json")
+        subjects = [
+            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
+        ]
 
     return in_paths, subjects
 
@@ -175,30 +198,27 @@ def add_output_settings(setting, onderwerp, in_path):
     """ Returns geoserver settings in an organized manner
     conform https://sites.google.com/nelen-schuurmans.nl/handleiding-klimaatatlas/data-protocol
     """
-    
+
     # layer names, workspace names en server names
     if "PRODUCTIE" in setting.server_naam:
         layer_name = "{}_{}_{}".format(
             setting.bo_nummer, setting.organisatie, onderwerp
         )
         workspace_name = setting.organisatie + "_" + setting.product_naam
-    elif "PROJECTEN" in setting.server_naam:
+    elif "PROJECTEN" in setting.server_naam or "STAGING" in setting.server_naam:
         layer_name = "{}_{}_{}_{}".format(
             setting.project_nummer.lower(),
             setting.organisatie,
             onderwerp,
             setting.einddatum,
         )
-        workspace_name = "p_{}_{}".format(
-            setting.organisatie, setting.product_naam
-        )
+        workspace_name = "p_{}_{}".format(setting.organisatie, setting.product_naam)
 
     else:
         raise ValueError("servernaam fout")
 
     store_name = "{}_{}".format(
-        setting.project_nummer.lower(),
-        PG_DATABASE[setting.server_naam]["database"],
+        setting.project_nummer.lower(), PG_DATABASE[setting.server_naam]["database"]
     )
 
     # abstracts and titles
@@ -266,16 +286,14 @@ def add_output_settings(setting, onderwerp, in_path):
 
         setting.in_datasource = in_path
         setting.in_layer = None
-        setting.in_sld_path = in_path.replace(
-            os.path.splitext(in_path)[1], ".sld"
-        )
+        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1], ".sld")
         setting.skip = False
 
         # Extra directory setting
         try:
             setting.set_values(os.path.basename(in_path))
             if not setting.skip:
-                print('Found additional directory settings')
+                print("Found additional directory settings")
                 if not setting.abstract == "none":
                     abstract_data = setting.abstract
                 if not setting.title == "none":
@@ -314,6 +332,23 @@ def add_output_settings(setting, onderwerp, in_path):
         "einddatum": setting.einddatum,
     }
 
+    # Add wms layers
+    if setting.wms_layer_only or setting.skip_lizard_wms_layer:
+        setting.set_values("lizard_wmslayers")
+        json_path = in_path.replace(os.path.splitext(in_path)[1], ".json")
+        atlas_dict = json.load(open(json_path))["atlas"]
+
+        wmslayer = wmslayers()
+        wmslayer.atlas2wms(
+            atlas_dict,
+            setting.organisation_uuid,
+            setting.dataset,
+            setting.eigen_naam,
+            setting.organisatie,
+            setting.product_naam,
+        )
+        setting.wmslayer = wmslayer
+
     # Overwrite all
     if setting.overwrite_all:
         setting.overwrite_postgres = True
@@ -321,6 +356,14 @@ def add_output_settings(setting, onderwerp, in_path):
         setting.overwrite_feature = True
         setting.overwrite_sld = True
         setting.overwrite_title = True
+
+    if setting.wms_layer_only:
+        setting.skip_mask = True
+        setting.skip_correction = True
+        setting.skip_sld_check = True
+        setting.skip_pg_upload = True
+        setting.skip_gs_upload = True
+        setting.skip_lizard_wms_layer = False
 
     # Outputs geoserver
     setting.workspace_name = workspace_name
@@ -365,7 +408,7 @@ def batch_upload(inifile):
 
     else:
         print("use either use_postgis or use_batch")
-
+    print_list(subjects, "Subjects")
     print_list(in_paths, "Paths")
 
     failures = {}
@@ -379,12 +422,12 @@ def batch_upload(inifile):
             setting.server = wrap_geoserver(setting.server_naam)
             print_dictionary(setting.__dict__, "Layer settings")
 
-            try:
-                succes[setting.subject] = upload(setting)
+            # try:
+            succes[setting.subject] = upload(setting)
 
-            except Exception as e:
-                print(e)
-                failures[setting.subject] = e
+            # except Exception as e:
+            #     print(e)
+            #     failures[setting.subject] = e
 
             log_time("info", "sleeping to decrease load on server....")
             sleep(1)
@@ -397,120 +440,125 @@ def batch_upload(inifile):
 
 def upload(setting):
     log_time("info", setting.layer_name, "0. starting.....")
-    shape = wrap_shape(setting.in_datasource, setting.in_layer)
 
-    datasource = shape.datasource
-    layer_name = setting.layer_name
+    if not (setting.skip_gs_upload and setting.skip_pg_upload):
+        vector = wrap_shape(setting.in_datasource, setting.in_layer)
 
     if not setting.skip_correction:
         log_time("info", setting.layer_name, "1. vector corrections")
-        datasource, layer_name = correct(
-            datasource[0], setting.layer_name, setting.epsg
-        )
+        vector.correct(vector.layer, setting.layer_name, setting.epsg)
+        setting.layer_name = vector.layer_name
 
-    if setting.use_mask:
+    if not setting.skip_mask:
         log_time("info", setting.layer_name, "1.2 vector corrections - mask")
         vector_geom = vector_to_geom(setting.mask_path, setting.epsg)
-        datasource = vector_clip(datasource, vector_geom, setting.ini_location)
 
-    setting.layer_name = layer_name
+        vector.clip(vector.layer, vector_geom)
+        # if setting.skip_correction:
+        #     shape.clip(shape.layer_correct, vector_geom)
+        # else:
+        #     shape.clip(shape.layer, vector_geom)
 
+    # ds_path = shape.ds_clip.name
+    # shape = None
+    # vector = wrap_shape(ds_path)
 
-    if datasource[0].GetFeatureCount() == 0:
-        log_time("error", setting.layer_name, "vector feature count is 0")
-    if datasource == None:
-        log_time("error", setting.layer_name, "Datasource is none")
-        
+    if (not setting.skip_mask) or (not setting.skip_correction):
+        if vector.ds[0].GetFeatureCount() == 0:
+            log_time("error", setting.layer_name, "vector feature count is 0")
+        if vector.ds == None:
+            log_time("error", setting.layer_name, "Datasource is none")
+        if vector.ds[0][0] == None:
+            log_time("error", setting.layer_name, "Feature is none")
 
     log_time("info", setting.layer_name, "2. Upload shape to pg database.")
-    pg_details = PG_DATABASE[setting.server_naam]
-    if setting.database_name is not None:
-        pg_details["database"] = setting.database_name
-    pg_database = wrap_shape(pg_details)
+    if not setting.skip_pg_upload:
+        pg_details = PG_DATABASE[setting.server_naam]
+        if setting.database_name is not None:
+            pg_details["database"] = setting.database_name
+        pg_database = wrap_shape(pg_details)
 
-    # set metadata
-    if not setting.product_naam == "flooding" and setting.set_metadata:
-        add_metadata_pgdatabase(setting, pg_database)
+        # set metadata
+        if not setting.product_naam == "flooding" and setting.set_metadata:
+            add_metadata_pgdatabase(setting, pg_database)
 
-    schema_layers = [layer.split(".")[-1] for layer in pg_database.layers]
-    pg_layer_present = setting.layer_name in schema_layers
+        schema_layers = [layer.split(".")[-1] for layer in pg_database.layers]
+        pg_layer_present = setting.layer_name in schema_layers
 
-    if not pg_layer_present or setting.overwrite_postgres:
-        copy2pg_database(
-            pg_database.datasource, datasource[0], setting.layer_name, setting.schema_name
+        if not pg_layer_present or setting.overwrite_postgres:
+            copy2pg_database(
+                pg_database.ds, vector.layer, setting.layer_name, setting.schema_name
+            )
+
+        else:
+            log_time("info", setting.layer_name, "Layer already in database.")
+
+    if not setting.skip_gs_upload:
+        log_time("info", setting.layer_name, "3. Create workspace.")
+        server = setting.server
+        server.create_workspace(setting.workspace_name)
+
+        log_time("info", setting.layer_name, "4. Create store.")
+        server.create_postgis_datastore(
+            setting.store_name, setting.workspace_name, pg_details
         )
 
-    else:
-        log_time("info", setting.layer_name, "Layer already in database.")
-
-    log_time("info", setting.server_naam, "Loading...")
-    server = setting.server
-
-    log_time("info", setting.layer_name, "3. Create workspace.")
-    server.create_workspace(setting.workspace_name)
-
-    log_time("info", setting.layer_name, "4. Create store.")
-    server.create_postgis_datastore(
-        setting.store_name, setting.workspace_name, pg_details
-    )
-
-    log_time("info", setting.layer_name, "5. Publish featuretype.")
-    server.publish_layer(
-        setting.layer_name,
-        setting.workspace_name,
-        setting.overwrite_feature,
-        setting.epsg,
-    )
-
-    if setting.use_existing_geoserver_sld:
-        log_time("info", setting.layer_name, "6-9. Setting existing sld.")
-        server.set_sld_for_layer(
-            workspace_name=None,
-            style_name=setting.existing_sld,
-            use_custom=True,
-        )
-    else:
-        log_time("info", setting.layer_name, "6. Load Style Layer Descriptor.")
-
-        sld = wrap_sld(setting.in_sld_path, _type="path")
-
-        if setting.check_sld:
-            log_time("info", setting.layer_name, "7. Check sld.")
-            pg_database.get_layer(setting.layer_name)
-
-            # lower all field names if necessary
-            print("Lowering")
-            pg_database.lower_all_field_names()
-            sld.lower_all_property_names()
-
-            if sld._type() == "category":
-                for sld_field_name in sld.get_all_property_names():
-                    if not sld_field_name in pg_database.get_all_field_names():
-                        replace_sld_field_based_on_shape(
-                            pg_database, sld, sld_field_name
-                        )
-
-        log_time("info", setting.layer_name, "8. Upload sld.")
-        style_name = setting.layer_name + "_style"
-        server.upload_sld(
-            style_name,
+        log_time("info", setting.layer_name, "5. Publish featuretype.")
+        server.publish_layer(
+            setting.layer_name,
             setting.workspace_name,
-            sld.get_xml(),
-            setting.overwrite_sld,
+            setting.overwrite_feature,
+            setting.epsg,
         )
 
-        log_time("info", "9. Connect sld to layer.")
-        server.set_sld_for_layer()
+        if setting.use_existing_geoserver_sld:
+            log_time("info", setting.layer_name, "6-9. Setting existing sld.")
+            server.set_sld_for_layer(
+                workspace_name=None, style_name=setting.existing_sld, use_custom=True
+            )
+        else:
+            log_time("info", setting.layer_name, "6. Load Style Layer Descriptor.")
 
-    log_time("info", setting.layer_name, "10. Add to abstract.")
-    if setting.overwrite_abstract:
-        server.write_abstract(setting.abstract_data)
+            sld = wrap_sld(setting.in_sld_path, _type="path")
 
-    log_time("info", setting.layer_name, "11. Add to title.")
-    if setting.overwrite_title:
-        server.write_title(setting.title_data)
+            if setting.skip_sld_check:
+                log_time("info", setting.layer_name, "7. Check sld.")
+                pg_database.get_layer(setting.layer_name)
 
-    log_time("info", setting.layer_name, "11. Returning wms, slug")
+                # lower all field names if necessary
+                print("Lowering")
+                pg_database.lower_all_field_names()
+                sld.lower_all_property_names()
+
+                if sld._type() == "category":
+                    for sld_field_name in sld.get_all_property_names():
+                        if not sld_field_name in pg_database.get_all_field_names():
+                            replace_sld_field_based_on_shape(
+                                pg_database, sld, sld_field_name
+                            )
+
+            log_time("info", setting.layer_name, "8. Upload sld.")
+            style_name = setting.layer_name + "_style"
+            server.upload_sld(
+                style_name, setting.workspace_name, sld.get_xml(), setting.overwrite_sld
+            )
+
+            log_time("info", "9. Connect sld to layer.")
+            server.set_sld_for_layer()
+
+        log_time("info", setting.layer_name, "10. Add to abstract.")
+        if setting.overwrite_abstract:
+            server.write_abstract(setting.abstract_data)
+
+        log_time("info", setting.layer_name, "11. Add to title.")
+        if setting.overwrite_title:
+            server.write_title(setting.title_data)
+
+    if not setting.skip_lizard_wms_layer:
+        log_time("info", setting.layer_name, "12. Add wms layer.")
+        setting.wmslayer.create(setting.wmslayer.configuration)
+
+    log_time("info", setting.layer_name, "13. Returning wms, slug")
     wms = REST[setting.server_naam].replace(
         "rest", "{}/wms".format(setting.workspace_name)
     )
