@@ -86,7 +86,6 @@ def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
         for x in range(in_layer.GetLayerDefn().GetFieldCount()):
             new_layer.CreateField(in_layer.GetLayerDefn().GetFieldDefn(x))
 
-        #             shape.write(datasource[0],"C:/Users/chris.kerklaan/Documents/Projecten/westland/clip_test5.shp")
         in_layer.ResetReading()
         new_layer.StartTransaction()
         for fid in tqdm(range(in_layer.GetFeatureCount())):

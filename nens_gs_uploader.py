@@ -5,9 +5,7 @@ Created on Wed Jul 24 15:39:13 2019
 @author: chris.kerklaan - N&S
 
 TODOs:
-    1. toevoegen wmslayers
-    1. Fix geomtries/ correct werkt nog niet goed
-    2. Check slds werken nog niet goed
+    1. Check slds werken nog niet goed
     
 """
 # system imports
@@ -23,6 +21,10 @@ import ogr
 import gdal
 import argparse
 from glob import glob
+
+# Test arguments
+inifile = "C:/Users/chris.kerklaan/tools/nens_gs_uploader/data/nens_gs_uploader.ini"
+sys.path.append("C:/Users/chris.kerklaan/tools")
 
 # Local imports
 from nens_gs_uploader.postgis import (
@@ -43,15 +45,11 @@ from nens_gs_uploader.vector import vector_to_geom, wrap_shape
 from nens_gs_uploader.wrap import wrap_geoserver
 from nens_gs_uploader.sld import wrap_sld
 from nens_gs_uploader.sld import replace_sld_field_based_on_shape
-from atlas2catalogue.wmslayers import wmslayers
+from nens_gs_uploader.wmslayers import wmslayers
 
 # Globals
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
-
-FILE = os.path.dirname(os.path.abspath(__file__))
-SLD_PATH = os.path.join(FILE, "nens_gs_uploader", "sld")
-
 
 # Exceptions
 ogr.UseExceptions()
@@ -65,10 +63,6 @@ gdal.SetConfigOption("CPL_CURL_VERBOSE", "ON")
 # Logging configuration options
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
-
-# Test arguments
-# inifile=  'C:/Users/chris.kerklaan/tools/nens_gs_uploader/data/nens_gs_uploader.ini'
-# sys.path.append('C:/Users/chris.kerklaan/tools')
 
 
 def get_parser():
@@ -98,10 +92,6 @@ def get_subject_from_name(name, organisation):
 
 def get_subject_from_path(path, organisation):
     return get_subject_from_name(os.path.basename(path).split(".")[0], organisation)
-
-
-def get_standard_sld(sld_name):
-    return os.path.join(SLD_PATH, sld_name + ".sld")
 
 
 def get_paths_and_subjects(setting, source):
@@ -307,16 +297,6 @@ def add_output_settings(setting, onderwerp, in_path):
         print("use either use_postgis or use_directory")
 
     # Overwrite sld path if standard sld is used
-    if setting.use_standard_sld:
-        styles = [
-            "begaanbaarheid_wegen",
-            "kwetsbaarheid_panden",
-            "kwetsbare_objecten",
-            "regenwaterstructuur",
-        ]
-        list_style = [style for style in styles if style in onderwerp]
-        setting.in_sld_path = get_standard_sld(list_style[0])
-
     if setting.use_existing_geoserver_sld:
         existing_sld = setting.geoserver_sld
         setting.existing_sld = existing_sld
@@ -333,7 +313,7 @@ def add_output_settings(setting, onderwerp, in_path):
     }
 
     # Add wms layers
-    if setting.wms_layer_only or setting.skip_lizard_wms_layer:
+    if setting.wms_layer_only or not setting.skip_lizard_wms_layer:
         setting.set_values("lizard_wmslayers")
         json_path = in_path.replace(os.path.splitext(in_path)[1], ".json")
         atlas_dict = json.load(open(json_path))["atlas"]
@@ -347,7 +327,11 @@ def add_output_settings(setting, onderwerp, in_path):
             setting.organisatie,
             setting.product_naam,
         )
+
         setting.wmslayer = wmslayer
+        setting.wmsslug = atlas_dict["slug"]
+        wms_url = atlas_dict["url"].replace(atlas_dict["workspace"] + "/wms", "/rest/")
+        setting.wmsserver = wms_url
 
     # Overwrite all
     if setting.overwrite_all:
@@ -440,6 +424,10 @@ def batch_upload(inifile):
 
 def upload(setting):
     log_time("info", setting.layer_name, "0. starting.....")
+    wms = REST[setting.server_naam].replace(
+        "rest", "{}/wms".format(setting.workspace_name)
+    )
+    slug = "{}:{}".format(setting.workspace_name, setting.layer_name)
 
     if not (setting.skip_gs_upload and setting.skip_pg_upload):
         vector = wrap_shape(setting.in_datasource, setting.in_layer)
@@ -452,16 +440,7 @@ def upload(setting):
     if not setting.skip_mask:
         log_time("info", setting.layer_name, "1.2 vector corrections - mask")
         vector_geom = vector_to_geom(setting.mask_path, setting.epsg)
-
         vector.clip(vector.layer, vector_geom)
-        # if setting.skip_correction:
-        #     shape.clip(shape.layer_correct, vector_geom)
-        # else:
-        #     shape.clip(shape.layer, vector_geom)
-
-    # ds_path = shape.ds_clip.name
-    # shape = None
-    # vector = wrap_shape(ds_path)
 
     if (not setting.skip_mask) or (not setting.skip_correction):
         if vector.ds[0].GetFeatureCount() == 0:
@@ -556,13 +535,19 @@ def upload(setting):
 
     if not setting.skip_lizard_wms_layer:
         log_time("info", setting.layer_name, "12. Add wms layer.")
-        setting.wmslayer.create(setting.wmslayer.configuration)
+        gs_wms_server = wrap_geoserver(setting.wmsserver)
+        gs_wms_server.get_layer(setting.wmsslug)
+        latlon_bbox = gs_wms_server.latlon_bbox
+        setting.wmslayer.configuration["spatial_bounds"] = {
+            "south": latlon_bbox[2],
+            "west": latlon_bbox[0],
+            "north": latlon_bbox[3],
+            "east": latlon_bbox[1],
+        }
+
+        setting.wmslayer.create(setting.wmslayer.configuration, overwrite=True)
 
     log_time("info", setting.layer_name, "13. Returning wms, slug")
-    wms = REST[setting.server_naam].replace(
-        "rest", "{}/wms".format(setting.workspace_name)
-    )
-    slug = "{}:{}".format(setting.workspace_name, setting.layer_name)
 
     return wms, slug
 

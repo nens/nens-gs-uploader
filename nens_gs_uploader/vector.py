@@ -4,6 +4,8 @@ Created on Fri Apr 26 16:39:50 2019
 @author: chris.kerklaan
 
 Vector wrapper used for GIS programming
+
+
 """
 # System imports
 import os
@@ -29,7 +31,7 @@ DRIVER_GDAL_MEM = gdal.GetDriverByName("MEM")
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 DRIVER_OGR_GPKG = ogr.GetDriverByName("GPKG")
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
-MEM_NUM = 0
+_mem_num = 0
 
 # Shapes
 POLYGON = "POLYGON (({x1} {y1},{x2} {y1},{x2} {y2},{x1} {y2},{x1} {y1}))"
@@ -235,10 +237,18 @@ class wrap_shape(object):
         self.change_source(self.ds_single, self.layer_single)
 
 
+def create_geom_transform(in_spatial_ref, out_epsg):
+    """Return coordinate transformation based on two reference systems"""
+    out_spatial_ref = osr.SpatialReference()
+    out_spatial_ref.ImportFromEPSG(out_epsg)
+    coordTrans = osr.CoordinateTransformation(in_spatial_ref, out_spatial_ref)
+    return coordTrans, out_spatial_ref
+
+
 def create_mem_ds():
-    global MEM_NUM
-    mem_datasource = DRIVER_OGR_SHP.CreateDataSource("/vsimem/mem{}".format(MEM_NUM))
-    MEM_NUM = MEM_NUM + 1
+    global _mem_num
+    mem_datasource = DRIVER_OGR_SHP.CreateDataSource("/vsimem/mem{}".format(_mem_num))
+    _mem_num = _mem_num + 1
     return mem_datasource
 
 
@@ -249,11 +259,13 @@ def geom_transform(in_spatial_ref, out_epsg):
     return coordTrans
 
 
-def copymem(vector_layer, layer_name="mem", geom_type=ogr.wkbPolygon):
+def copymem(vector_layer, layer_name="mem", geom_type=ogr.wkbPolygon, spatial_ref=None):
+    """ makes a copy of the vector_layer and returns a memory ds and layer"""
+    if spatial_ref is None:
+        spatial_ref = vector_layer.GetSpatialRef()
+
     out_datasource = create_mem_ds()
-    out_layer = out_datasource.CreateLayer(
-        layer_name, vector_layer.GetSpatialRef(), geom_type
-    )
+    out_layer = out_datasource.CreateLayer(layer_name, spatial_ref, geom_type)
 
     vector_layer_defn = vector_layer.GetLayerDefn()
     for i in range(vector_layer_defn.GetFieldCount()):
@@ -267,13 +279,14 @@ def multipoly2poly(in_layer, out_layer):
     lost_features = []
     layer_defn = in_layer.GetLayerDefn()
     field_names = []
+
     for n in range(layer_defn.GetFieldCount()):
         field_names.append(layer_defn.GetFieldDefn(n).name)
 
     for count, in_feat in enumerate(in_layer):
-        content = {}
-        for field_name in field_names:
-            content[field_name] = in_feat.GetField(field_name)
+        content = in_feat.items()
+        # for field_name in field_names:
+        #     content[field_name] = in_feat.GetField(field_name)
 
         geom = in_feat.GetGeometryRef()
         if geom == None:
@@ -281,10 +294,9 @@ def multipoly2poly(in_layer, out_layer):
             lost_features.append(in_feat.GetFID())
             continue
 
-        if (
-            geom.GetGeometryName() == "MULTIPOLYGON"
-            or geom.GetGeometryName() == "MULTILINESTRING"
-        ):
+        geom_name = geom.GetGeometryName()
+
+        if "multi" in geom_name.lower():
             for geom_part in geom:
                 addPolygon(geom_part.ExportToWkb(), content, out_layer)
         else:
@@ -346,29 +358,35 @@ def fix_geometry(geometry):
     if geometry is None:
         return None, False
 
-    geom_type = geometry.GetGeometryType()
+    geom_name = geometry.GetGeometryName()
 
     # check pointcount if linestring
-    if geom_type == ogr.wkbLineString:
+    if "LINESTRING" in geom_name:
         if geometry.GetPointCount() == 1:
-            print("Geometry point count of linestring = 1")
+            log_time("error", "Geometry point count of linestring = 1")
             return geometry, False
         else:
             pass
 
-    # check self intersections
-    if geom_type == ogr.wkbPolygon:
-        geometry = geometry.Buffer(0)
+    # solve self intersections
+    if "POLYGON" in geom_name:
+        try:
+            geometry = geometry.Buffer(0)
+        except Exception as e:
+            # RuntimeError: IllegalArgumentException: Points of LinearRing do not form a closed linestring
+            log_time("error", e)
+            return geometry, False
 
+    # most likely does not do anything
     # check slivers
-    if not geometry.IsValid():
-        perimeter = geometry.Boundary().Length()
-        area = geometry.GetArea()
-        sliver = float(perimeter / area)
+    # if not geometry.IsValid():
+    #     perimeter = geometry.Boundary().Length()
+    #     area = geometry.GetArea()
+    #     sliver = float(perimeter / area)
 
-        if sliver < 1:
-            wkt = geometry.ExportToWkt()
-            geometry = ogr.CreateGeometryFromWkt(wkt)
+    #     if sliver < 1:
+    #         wkt = geometry.ExportToWkt()
+    #         geometry = ogr.CreateGeometryFromWkt(wkt)
 
     return geometry, geometry.IsValid()
 
@@ -405,26 +423,32 @@ def correct(in_layer, layer_name="", epsg=3857):
         lost_features = []
         in_feature_count = in_layer.GetFeatureCount()
 
-        # Get inspatial reference and geometry from in shape
-        geom_type = in_layer.GetGeomType()
-        in_spatial_ref = in_layer.GetSpatialRef()
+        # reset reading
         in_layer.ResetReading()
 
-        mem_datasource = create_mem_ds()
-        mem_layer = mem_datasource.CreateLayer(layer_name, in_spatial_ref, geom_type)
+        layer_name = layer_name.lower()
+        log_time("info", "check - Name length")
+        if len(layer_name) + 10 > 64:
+            log_time("error", "laagnaam te lang, 50 characters max.")
+            log_time("info", "formatting naar 50 met deze naam: %s" % layer_name[:50])
+            layer_name = layer_name[:50]
 
-        if layer_name != "":  # lower layer_name
-            layer_name = layer_name.lower()
-            log_time("info", "check - Name length")
-            if len(layer_name) + 10 > 64:
-                log_time("error", "laagnaam te lang, 50 characters max.")
-                log_time("info", "formatting naar 50.")
-                layer_name = layer_name[:50]
+        # Create output dataset and force dataset to multiparts
+        geom_type = in_layer.GetGeomType()
+        geom_name = ogr.GeometryTypeToName(geom_type)
+        if "polygon" in geom_name.lower():
+            output_geom_type = 3  # polygon
+        elif "line" in geom_name.lower():
+            output_geom_type = 2  # linestring
+        elif "point" in geom_name.lower():
+            output_geom_type = 1  # point
+        else:
+            log_time(
+                "Error", "Geometry could not be translated to singlepart %s" % geom_name
+            )
+            raise TypeError()
 
-        layer_defn = in_layer.GetLayerDefn()
-        for i in range(layer_defn.GetFieldCount()):
-            field_defn = layer_defn.GetFieldDefn(i)
-            mem_layer.CreateField(field_defn)
+        mem_datasource, mem_layer = copymem(in_layer, geom_type=output_geom_type)
 
         log_time("info", "check - Multipart to singlepart")
         lost_feat = multipoly2poly(in_layer, mem_layer)
@@ -434,12 +458,10 @@ def correct(in_layer, layer_name="", epsg=3857):
             log_time("error", "Multipart to singlepart failed")
             return 1
 
-        spatial_ref_3857 = osr.SpatialReference()
-        spatial_ref_3857.ImportFromEPSG(int(epsg))
-        reproject = osr.CoordinateTransformation(in_spatial_ref, spatial_ref_3857)
+        in_spatial_ref = in_layer.GetSpatialRef()
+        reproject, out_spatial_ref = create_geom_transform(in_spatial_ref, int(epsg))
 
         flatten = False
-        geom_name = ogr.GeometryTypeToName(geom_type)
         if "3D" in geom_name:
             log_time("warning", "geom type: " + geom_name)
             log_time("info", "Flattening to 2D")
@@ -451,23 +473,9 @@ def correct(in_layer, layer_name="", epsg=3857):
                 "geometry invalid, most likely has a z-type", "geom type: ", geom_name
             )
 
-        # Create output dataset and force dataset to multiparts
-        if geom_type == 6:
-            geom_type = 3  # polygon
-
-        elif geom_type == 5:
-            geom_type = 2  # linestring
-
-        elif geom_type == 4:
-            geom_type = 1  # point
-
-        out_datasource = create_mem_ds()
-        out_layer = out_datasource.CreateLayer(layer_name, spatial_ref_3857, geom_type)
-        layer_defn = in_layer.GetLayerDefn()
-
-        # Copy fields from memory layer to output dataset
-        for i in range(layer_defn.GetFieldCount()):
-            out_layer.CreateField(layer_defn.GetFieldDefn(i))
+        out_datasource, out_layer = copymem(
+            in_layer, geom_type=output_geom_type, spatial_ref=out_spatial_ref
+        )
 
         print("info", "check - Reproject layer to {}".format(str(epsg)))
         for out_feat in tqdm(mem_layer):
@@ -484,7 +492,7 @@ def correct(in_layer, layer_name="", epsg=3857):
                 continue
 
             # Force and transform geometry
-            out_geom = ogr.ForceTo(out_geom, geom_type)
+            out_geom = ogr.ForceTo(out_geom, output_geom_type)
             out_geom.Transform(reproject)
 
             # flattening to 2d
@@ -517,7 +525,7 @@ def correct(in_layer, layer_name="", epsg=3857):
             log_time("warning", "In feature count greater than out feature count")
 
         else:
-            pass
+            print("info", "check  - Features count {}".format(out_feature_count))
 
     except Exception as e:
         print(e)
@@ -767,6 +775,8 @@ if __name__ == "__main__":
 
     for vector in os.listdir(input_dir):
         print(vector)
+        if vector.split(".")[1] != "shp":
+            continue
         vector_path = os.path.join(input_dir, vector)
         vector_out_path = os.path.join(output_dir, vector)
         if os.path.exists(vector_out_path):
@@ -776,11 +786,3 @@ if __name__ == "__main__":
         vector_obj = wrap_shape(vector_path)
         vector_obj.clip(vector_obj.layer, extent_geom)
         vector_obj.write(vector_obj.layer_clip, vector_out_path)
-
-    in_datasource = ogr.Open(
-        "C:/Users/chris.kerklaan/Documents\Projecten/HHNK_klimaatatlas/temp/nwm_mediaan_peilgebied_ghg_2050.gpkg"
-    )
-    in_layer = in_datasource[0]
-    layer_name = "beweegbare_bruggen"
-    out_datasource, out_layer = correct(in_layer, layer_name)
-    out_layer.GetFeatureCount()
