@@ -189,18 +189,18 @@ def batch_upload(inifile):
     succes = {}
     for count, path in enumerate(present_paths):
         log_time("info", percentage(count, len(present_paths)), path, "l")
+        try:
+            setting.in_path = path
+            setting = add_output_settings(setting)
 
-        setting.in_path = path
-        setting = add_output_settings(setting)
-
-        if not setting.skip:
-            print_dictionary(setting.__dict__, "Settings")
-            #            try:
-            succes[setting.onderwerp] = upload(setting)
-    #
-    #            except Exception as e:
-    #                print(e)
-    #                failures[setting.onderwerp] = e
+            if not setting.skip:
+                print_dictionary(setting.__dict__, "Settings")
+    
+                succes[setting.onderwerp] = upload(setting)
+        
+        except Exception as e:
+            print(e)
+            failures[setting.onderwerp] = e
 
     # log_time("info", "sleeping to decrease load on server....")
     # sleep(30)

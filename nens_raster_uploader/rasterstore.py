@@ -2,9 +2,8 @@
 
 
 # System imports
-import sys
-
-# sys.path.append("C:/Users/chris.kerklaan/Documents/base_modules")
+# import sys
+# sys.path.append("C:/Users/chris.kerklaan/tools/")
 
 # Third-party imports
 import json
@@ -21,7 +20,6 @@ class rasterstore(object):
         self.password = password
         self.raster_url = "https://demo.lizard.net/api/v4/rasters/"
         self.search_url = "https://demo.lizard.net/api/v4/search/"
-        # self.raster_uuid = "https://demo.lizard.net/api/v4/rasters/{uuid}/"
         self.organisation_url = "https://demo.lizard.net/api/v4/organisations/"
 
         self.post_headers = {
@@ -169,7 +167,6 @@ class rasterstore(object):
             else:
                 print("Overwrite true but store does not exist")
 
-        configuration["organisation"] = self.organisation_uuid
         r = post(
             url=self.raster_url,
             data=json.dumps(configuration),
@@ -185,7 +182,12 @@ class rasterstore(object):
             print(r.json())
             raise ValueError("create store failure")
 
-    def post_data(self, path):
+    def post_data(self, path, post_only=False, configuration=False):
+
+        if post_only:
+            raster = self.get_raster_by_slug(configuration["slug"])
+            self.raster_uuid = raster["uuid"]
+
         print(path)
         url = self.raster_url + self.raster_uuid + "/data/"
 
@@ -197,6 +199,69 @@ class rasterstore(object):
 
         else:
             print("post data succes", r.status_code)
+
+    def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
+        raster = atlas_json["rasterstore"]
+        atlas = atlas_json["atlas"]
+        
+        self.configuration = {
+            "name": atlas["name"],
+            "description": strip_information(atlas["information"]),
+            "supplier": supplier,
+            "supplier_code": raster["name"],
+            "aggregation_type": 2,
+            "options": raster["options"],
+            "acces_modifier": acces_modifier,
+            "rescalable": rescalable
+            #  "source":
+        }
+
+        try:
+            code = raster["observation_type"]["code"]
+
+        except TypeError:
+            code = "-"
+            
+        try:
+            org_uuid = raster["organisation"]["uuid"] 
+            
+        except TypeError:
+            print('Uuid of organisation not filled, using nens')
+            org_uuid = '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'
+            
+
+        self.configuration.update({"observation_type": code})
+        self.configuration.update({"organisation":org_uuid})
+
+def strip_information(information):
+    characters = [
+        "<p>",
+        "</p>",
+        "<strong>",
+        "</strong>",
+        "<br>",
+        "<\br?",
+        "\n",
+        "<em>",
+        "<a>",
+        "</a>",
+        "<em>",
+        "</em>",
+        "<h5>",
+        "</h5>",
+        "</ul>",
+        "<ul>",
+        "<li>",
+        "</li>",
+        "</ul>",
+        "<ul>",
+        "<h4>",
+        "</h4>",
+    ]
+
+    for character in characters:
+        information = information.replace(character, "")
+    return information
 
 
 if __name__ == "__main__":

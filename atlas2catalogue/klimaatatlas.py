@@ -93,6 +93,37 @@ class wrap_atlas:
         return present_in_atlas
 
 
+def strip_information(information):
+    characters = [
+        "<p>",
+        "</p>",
+        "<strong>",
+        "</strong>",
+        "<br>",
+        "<\br?",
+        "\n",
+        "<em>",
+        "<a>",
+        "</a>",
+        "<em>",
+        "</em>",
+        "<h5>",
+        "</h5>",
+        "</ul>",
+        "<ul>",
+        "<li>",
+        "</li>",
+        "</ul>",
+        "<ul>",
+        "<h4>",
+        "</h4>",
+    ]
+
+    for character in characters:
+        information = information.replace(character, "")
+    return information
+
+
 if __name__ == "__main__":
     wrap = wrap_atlas("zundert")
     json = wrap.get_json("zundert")

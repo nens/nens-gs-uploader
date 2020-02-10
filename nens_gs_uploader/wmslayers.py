@@ -144,9 +144,10 @@ class wmslayers(object):
         # correct data
         name = atlas_dict["name"][:80]
         slug_org = "_".join([organisation.lower(), product.lower()])
-        slug = ":".join([slug_org, atlas_dict["slug"].lower()])[:64]
+        slug_or = atlas_dict["slug"].lower().split(":")[1]
+        slug = ":".join([slug_org, slug_or])[:64]
         description = strip_information(atlas_dict["information"])
-        download_url = "{}?&request=GetFeature&typeName={}&OutputFormat=shape-zip".format(
+        download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
             atlas_dict["url"].replace("wms", "wfs"), atlas_dict["slug"]
         )
 

@@ -9,10 +9,10 @@ import os
 import sys
 
 # relevant paths
-TOOLS = "C:/Users/chris.kerklaan/tools"
+# TOOLS = "C:/Users/chris.kerklaan/tools"
 
-if TOOLS not in sys.path:
-    sys.path.append(TOOLS)
+# if TOOLS not in sys.path:
+#    sys.path.append(TOOLS)
 
 # Third-party imports
 import ogr
@@ -23,6 +23,8 @@ from tqdm import tqdm
 from configparser import RawConfigParser
 import argparse
 import requests
+import zipfile
+
 
 # Local imports
 from nens_gs_uploader.postgis import SERVERS
@@ -41,10 +43,6 @@ from nens_raster_uploader.geoblocks import (
 # Driver
 OGR_SHAPE_DRIVER = ogr.GetDriverByName("ESRI Shapefile")
 OGR_GPKG_DRIVER = ogr.GetDriverByName("GPKG")
-
-# GLOBALS
-POLYGON = "POLYGON (({x1} {y1},{x2} {y1},{x2} {y2},{x1} {y2},{x1} {y1}))"
-INSTELLINGEN_PATH = "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
 
 
 class MissingSLD(Exception):
@@ -84,7 +82,7 @@ def get_parser():
         help="download json only",
         dest="meta_only",
         action="store_true",
-    )   
+    )
 
     return parser
 
@@ -353,14 +351,31 @@ def get_uuid_by_organisations(rasters, organisations):
     print("Percentage uuid complete:", perc, "%")
     return rasters
 
+
 def download_vector(vector, temp_dir):
-    download_url = "{}?&request=GetFeature&typeName={}&OutputFormat=shape-zip".format(
-            vector["url"].replace("wms", "wfs"), vector["slug"]
-        )
+    download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
+        vector["url"].replace("wms", "wfs"), vector["slug"]
+    )
     response = requests.get(download_url, stream=True)
-    with open(os.path.join(temp_dir, vector['layername'] + ".zip"), "wb") as handle:
+    with open(os.path.join(temp_dir, vector["layername"] + ".zip"), "wb") as handle:
         for data in tqdm(response.iter_content()):
             handle.write(data)
+    return os.path.join(temp_dir, vector["layername"] + ".zip")
+
+
+def unzip(input_file, output_dir, output_subject):
+    zipdata = zipfile.ZipFile(input_file)
+    zipinfos = zipdata.infolist()
+
+    # iterate through each file
+    for zipinfo in zipinfos:
+        if zipinfo.filename.endswith(".txt"):
+            continue
+        zipinfo.filename = output_subject + os.path.splitext(zipinfo.filename)[1]
+        zipdata.extract(zipinfo, path=output_dir)
+
+    zipdata.close()
+    os.remove(input_file)
 
 
 def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
@@ -390,9 +405,10 @@ def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
                 with open(meta_path, "w") as outfile:
                     json.dump(vector, outfile)
                 continue
-            
-            download_vector(vector, temp_dir)
-            
+
+            zip_file = download_vector(vector, temp_dir)
+            unzip(zip_file, temp_dir, subject)
+
             # retrieve sld
             gs_dict[vector["geoserver"]].get_layer(vector["slug"])
             sld_body = gs_dict[vector["geoserver"]].sld_body
@@ -422,6 +438,11 @@ def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
 
         except AttributeError as e:
             vector["extract_error"] = "Vector in postgres db but not in gs{}".format(e)
+            vector["temp_path"] = None
+            extract_data_failures.append(vector)
+
+        except zipfile.BadZipfile as e:
+            vector["extract_error"] = "Vector has bad zip file {}".format(e)
             vector["temp_path"] = None
             extract_data_failures.append(vector)
 

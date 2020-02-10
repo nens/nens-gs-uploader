@@ -173,12 +173,11 @@ class wrap_geoserver:
         #                print('Layer does not exists in workspace, not overwriting')
 
         if not layer_exists:
-            print("Adding layer")
             feature_type = self.catalog.publish_featuretype(
                 layer_name,
                 self.store,
                 "EPSG:{}".format(str(epsg)),
-                srs="EPSG:{}".format((epsg)),
+                srs="EPSG:{}".format(str(epsg)),
             )
             self.save(feature_type)
             self.feature_type = feature_type

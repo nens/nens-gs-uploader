@@ -12,9 +12,9 @@ import os
 import sys
 
 # Relevant paths
-BASE = "C:/Users/chris.kerklaan/tools"
-if BASE not in sys.path:
-    sys.path.append(BASE)
+# BASE = "C:/Users/chris.kerklaan/tools"
+# if BASE not in sys.path:
+#    sys.path.append(BASE)
 
 # Third party imports
 import osr
@@ -459,6 +459,7 @@ def correct(in_layer, layer_name="", epsg=3857):
             return 1
 
         in_spatial_ref = in_layer.GetSpatialRef()
+        # print(in_spatial_ref, int(epsg))
         reproject, out_spatial_ref = create_geom_transform(in_spatial_ref, int(epsg))
 
         flatten = False

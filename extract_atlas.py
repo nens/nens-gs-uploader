@@ -9,10 +9,10 @@ import os
 import sys
 
 # relevant paths
-TOOLS = "C:/Users/chris.kerklaan/tools"
+# TOOLS = "C:/Users/chris.kerklaan/tools"
 
-if TOOLS not in sys.path:
-    sys.path.append(TOOLS)
+# if TOOLS not in sys.path:
+#    sys.path.append(TOOLS)
 
 # Third-party imports
 import ogr
@@ -95,7 +95,7 @@ def get_parser():
         help="download json only",
         dest="meta_only",
         action="store_true",
-    )   
+    )
 
     return parser
 
@@ -444,7 +444,7 @@ def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
     print("Extracting vector data")
 
     for vector in tqdm(vectors):
-        # try:
+        try:
             print("Processing vector:", vector["name"])
             json_dict = {}
 
@@ -474,39 +474,39 @@ def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
             # write vector and sld to temporary folder
             vector_sld.write_xml(os.path.join(temp_dir, subject + ".sld"))
 
-        # except MissingSLD as e:
-        #     vector[
-        #         "extract_error"
-        #     ] = "missing sld body layer not in geoserver , {}".format(e)
-        #     extract_data_failures.append(vector)
-        #     vector["temp_path"] = None
+        except MissingSLD as e:
+            vector[
+                "extract_error"
+            ] = "missing sld body layer not in geoserver , {}".format(e)
+            extract_data_failures.append(vector)
+            vector["temp_path"] = None
 
-        # except VectorNotFound as e:
-        #     vector["extract_error"] = "vector not in directory or postgis {}".format(e)
-        #     vector["temp_path"] = None
-        #     extract_data_failures.append(vector)
+        except VectorNotFound as e:
+            vector["extract_error"] = "vector not in directory or postgis {}".format(e)
+            vector["temp_path"] = None
+            extract_data_failures.append(vector)
 
-        # except FoundCoverageStore as e:
-        #     vector["extract_error"] = "Found coverage store instead of vector{}".format(
-        #         e
-        #     )
-        #     vector["temp_path"] = None
-        #     extract_data_failures.append(vector)
+        except FoundCoverageStore as e:
+            vector["extract_error"] = "Found coverage store instead of vector{}".format(
+                e
+            )
+            vector["temp_path"] = None
+            extract_data_failures.append(vector)
 
-        # except AttributeError as e:
-        #     vector["extract_error"] = "Vector in postgres db but not in gs{}".format(e)
-        #     vector["temp_path"] = None
-        #     extract_data_failures.append(vector)
+        except AttributeError as e:
+            vector["extract_error"] = "Vector in postgres db but not in gs{}".format(e)
+            vector["temp_path"] = None
+            extract_data_failures.append(vector)
 
-        # else:
-        #     vector["temp_path"] = gpkg_path
-        #     vector["subject"] = subject
-        #     extract_data_succes.append(vector)
+        else:
+            vector["temp_path"] = gpkg_path
+            vector["subject"] = subject
+            extract_data_succes.append(vector)
 
-        # finally:
-        #     json_dict["atlas"] = vector
-        #     with open(meta_path, "w") as outfile:
-        #         json.dump(json_dict, outfile)
+        finally:
+            json_dict["atlas"] = vector
+            with open(meta_path, "w") as outfile:
+                json.dump(json_dict, outfile)
 
     return extract_data_succes, extract_data_failures
 
@@ -548,66 +548,6 @@ def extract_rasters(rasters, atlas_name, dataset, temp_dir, use_nens=False):
             configuration_new = store_configuration[0]
             if configuration_new is None:
                 raise StoreNotFound("Did not find rasterstore")
-
-            # add clip top copied rasterstore
-            # print(configuration_new)
-
-            # set dataset, does not work yet
-            # configuration_new['datasets'] = [dataset]
-
-            # # acces modifier
-            # configuration_new["access_modifier"] = 0
-
-            # # name
-            # configuration_new["name"] = raster["name"]
-            # # configuration_new['name'] = configuration_new['name'].lower()
-
-            # # supplier
-            # configuration_new["supplier"] = "chris.kerklaan"
-
-            # # Description
-            # configuration_new["description"] = strip_information(
-            #     raster["information"]
-            # )
-
-            # # observation type
-            # try:
-            #     code = configuration_new["observation_type"]["code"]
-
-            # except TypeError:
-            #     code = "Waterdepth"
-
-            # configuration_new["observation_type"] = code
-            # # organisation & slug name
-
-            # if use_nens:
-            #     store.organisation_uuid = "61f5a464-c350-44c1-9bc7-d4b42d7f58cb"
-            # else:
-            #     store.get_organisation_uuid(atlas_name)
-
-            # # slug search name
-            # slug_name = configuration_new["name"].replace(" ", "-").lower()
-            # slug_org = atlas_name
-            # slug = "{}:{}".format(slug_org, slug_name)
-
-            # # format slug to 64 characters
-            # slug = slug[:64]
-
-            # # styles
-            # configuration_new = delete_excess_raster_info(configuration_new)
-
-            # # add search terms
-            # configuration_new["search_terms"] = search_terms
-
-            # # add datasets
-            # configuration_new["datasets"] = [dataset]
-
-            # # add slug for search
-            # configuration_new["slug"] = slug
-
-        # except Exception as e:
-        #     print(e)
-        #     raster_failures.append([raster, e])
 
         except StoreNotFound as e:
             print(e)

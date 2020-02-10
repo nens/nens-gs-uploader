@@ -23,8 +23,8 @@ import argparse
 from glob import glob
 
 # Test arguments
-inifile = "C:/Users/chris.kerklaan/tools/nens_gs_uploader/data/nens_gs_uploader.ini"
-sys.path.append("C:/Users/chris.kerklaan/tools")
+inifile = "C:/Users/chris.kerklaan/Documents/Github/nens_gs_uploader/nens_gs_uploader/data/nens_gs_uploader.ini"
+sys.path.append("C:/Users/chris.kerklaan/Documents/Github/nens_gs_uploader")
 
 # Local imports
 from nens_gs_uploader.postgis import (
@@ -535,8 +535,18 @@ def upload(setting):
 
     if not setting.skip_lizard_wms_layer:
         log_time("info", setting.layer_name, "12. Add wms layer.")
-        gs_wms_server = wrap_geoserver(setting.wmsserver)
-        gs_wms_server.get_layer(setting.wmsslug)
+        if not setting.skip_gs_upload:
+            gs_wms_server = setting.server
+            gs_wms_server.get_layer(slug)
+            setting.wmslayer.configuration["wms_url"] = wms
+            download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
+                wms.replace("wms", "wfs"), slug
+            )
+            setting.wmslayer.configuration["download_url"]  = download_url
+        else:
+            gs_wms_server = wrap_geoserver(setting.wmsserver)
+            gs_wms_server.get_layer(setting.wmsslug)
+
         latlon_bbox = gs_wms_server.latlon_bbox
         setting.wmslayer.configuration["spatial_bounds"] = {
             "south": latlon_bbox[2],
