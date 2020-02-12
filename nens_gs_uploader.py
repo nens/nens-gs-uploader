@@ -406,12 +406,12 @@ def batch_upload(inifile):
             setting.server = wrap_geoserver(setting.server_naam)
             print_dictionary(setting.__dict__, "Layer settings")
 
-            # try:
-            succes[setting.subject] = upload(setting)
+            try:
+                succes[setting.subject] = upload(setting)
 
-            # except Exception as e:
-            #     print(e)
-            #     failures[setting.subject] = e
+            except Exception as e:
+                print(e)
+                failures[setting.subject] = e
 
             log_time("info", "sleeping to decrease load on server....")
             sleep(1)
