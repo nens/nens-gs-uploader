@@ -96,7 +96,23 @@ class connect2pg:
         # finally:
         if conn is not None:
             conn.close()
+            
+    def execute_sql(self, sql):
+        conn = self.psycopg2_connection()
+        cur = conn.cursor()
 
+        cur.execute(sql)
+        conn.commit()
+
+        if conn:
+            conn.rollback()
+            conn.close()
+
+        conn.close()
+
+        # finally:
+        if conn is not None:
+            conn.close()
 
 if __name__ == "__main__":
     pass

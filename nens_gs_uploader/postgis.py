@@ -56,7 +56,7 @@ PG_DATABASE = {
 }
 
 
-def connect2pg_database(database):
+def connect2pg_database(database, con_type= "ogr"):
     """ Returns connection to a postgresdatabase. """
     connection = connect2pg(
         dbname=database["database"],
@@ -65,8 +65,10 @@ def connect2pg_database(database):
         user=database["username"],
         password=database["password"],
     )
-    return connection.ogr_connection()
-
+    if con_type == 'ogr':
+        return connection.ogr_connection()
+    else:
+        return connection
 
 def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
     options = [
@@ -131,6 +133,19 @@ def add_metadata_pgdatabase(setting, datasource):
     metadata_layer.CreateFeature(new_feature)
     metadata_layer.CommitTransaction()
 
+def _clear_connections_database(database, client_adress = "10.100.230.131"):
+    connection = connect2pg_database(database,'psycopg')
+    query_check_1 = "SET extra_float_digits = 3"
+    query_check_2 = "ROLLBACK"
+    sql = """
+    SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
+    datname = '{}'  and client_addr = '{}' and query = '{}' or query = '{}'
+    ;
+    """.format(database["database"], client_adress, query_check_1, query_check_2)
+    
+    
+    connection.execute_sql(sql)
+    
 
 if __name__ == "__main__":
     import sys

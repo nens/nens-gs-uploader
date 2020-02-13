@@ -12,9 +12,9 @@ import os
 import sys
 
 # Relevant paths
-# BASE = "C:/Users/chris.kerklaan/tools"
-# if BASE not in sys.path:
-#    sys.path.append(BASE)
+BASE = "C:/Users/chris.kerklaan/tools"
+if BASE not in sys.path:
+    sys.path.append(BASE)
 
 # Third party imports
 import osr
@@ -167,6 +167,10 @@ class wrap_shape(object):
         coordTrans = osr.CoordinateTransformation(self.sr, out_spatial_ref)
 
         return coordTrans
+    
+    def close_connection(self):
+        self.layer = None
+        self.ds  = None
 
     def write(self, ogr_layer, path_name, layer_name="vect", epsg=28992):
 
@@ -779,11 +783,15 @@ if __name__ == "__main__":
         if vector.split(".")[1] != "shp":
             continue
         vector_path = os.path.join(input_dir, vector)
-        vector_out_path = os.path.join(output_dir, vector)
+        vector_out_path = os.path.join(output_dir, vector.split('.')[0] + "_clip.shp")
         if os.path.exists(vector_out_path):
             print(vector_out_path, "exists, skip")
             continue
 
-        vector_obj = wrap_shape(vector_path)
-        vector_obj.clip(vector_obj.layer, extent_geom)
-        vector_obj.write(vector_obj.layer_clip, vector_out_path)
+        try:
+            vector_obj = wrap_shape(vector_path)
+            vector_obj.clip(vector_obj.layer, extent_geom)
+            vector_obj.write(vector_obj.layer_clip, vector_out_path)
+            
+        except Exception as e:
+            print(e)
