@@ -27,7 +27,7 @@ import argparse
 
 # Local imports
 from nens_gs_uploader.postgis import SERVERS
-from nens_gs_uploader.postgis import connect2pg_database,_clear_connections_database
+from nens_gs_uploader.postgis import connect2pg_database, _clear_connections_database
 from nens_gs_uploader.wrap import wrap_geoserver
 
 from nens_gs_uploader.vector import wrap_shape
@@ -277,37 +277,39 @@ def get_datasource(vector, organisation):
     ds = None
     if vector["layername"] in atlas_v1_ds.layers:
         # print('ds atlas v1')
-        
+
         ds = (atlas_v1_ds, pg_atlas_v1)
     else:
         _clear_connections_database(pg_atlas_v1)
-        
+
     if vector["layername"] in atlas_v2_ds.layers:
         # print('ds atlas v2')
-        
+
         ds = (atlas_v2_ds, pg_atlas_v2)
     else:
         _clear_connections_database(pg_atlas_v2)
-        
+
     if vector["layername"] in atlas_project_ds.layers:
         # print('ds atlas porject')
         ds = (atlas_project_ds, pg_atlas_project)
-        
+
     else:
         _clear_connections_database(pg_atlas_project)
-        
+
     if vector["layername"] in lizard_project_ds.layers:
         # print('ds lizard project')
         ds = (lizard_project_ds, pg_lizard)
-        
+
     else:
         _clear_connections_database(pg_lizard)
-            
+
     if ds == None:
-        ds = (wrap_shape(vector_in_data_directories(vector["layername"], organisation)), None)
+        ds = (
+            wrap_shape(vector_in_data_directories(vector["layername"], organisation)),
+            None,
+        )
 
     return ds
-
 
 
 def write_vector(layer, layer_name, output_file):
@@ -524,15 +526,14 @@ def extract_vectors(vectors, temp_dir, organisation, meta_only=True):
         finally:
             json_dict["atlas"] = vector
             with open(meta_path, "w") as outfile:
-                json.dump(json_dict, outfile)    
-                
+                json.dump(json_dict, outfile)
+
             # close all connection
             vector_wrap.close_connection()
-            
+
             # close all user connection
             clear_connections_database(pg_db)
-    
-    
+
     return extract_data_succes, extract_data_failures
 
 
@@ -617,7 +618,6 @@ def extract_atlas(atlas_name, wd, meta_only):
     extract_succes, extract_failure = extract_vectors(
         vectors, vector_dir, atlas_name, meta_only=meta_only
     )
-    
 
     raster_succes, raster_failures = extract_rasters(
         rasters, atlas_name, dataset, raster_dir, use_nens=False

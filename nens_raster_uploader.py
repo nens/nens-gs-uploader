@@ -145,6 +145,7 @@ def add_output_settings(setting):
 
     if not setting.organisatie_uuid is None:
         setting.configuration.update({"organisation": setting.organisatie_uuid})
+
     else:
         setting.configuration.update(
             {"organisation": setting.store.get_organisation_uuid("nelen")}
@@ -195,9 +196,9 @@ def batch_upload(inifile):
 
             if not setting.skip:
                 print_dictionary(setting.__dict__, "Settings")
-    
+
                 succes[setting.onderwerp] = upload(setting)
-        
+
         except Exception as e:
             print(e)
             failures[setting.onderwerp] = e

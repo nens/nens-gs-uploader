@@ -542,7 +542,7 @@ def upload(setting):
             download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
                 wms.replace("wms", "wfs"), slug
             )
-            setting.wmslayer.configuration["download_url"]  = download_url
+            setting.wmslayer.configuration["download_url"] = download_url
         else:
             gs_wms_server = wrap_geoserver(setting.wmsserver)
             gs_wms_server.get_layer(setting.wmsslug)

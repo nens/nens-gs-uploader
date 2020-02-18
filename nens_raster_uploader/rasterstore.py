@@ -203,7 +203,7 @@ class rasterstore(object):
     def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
         raster = atlas_json["rasterstore"]
         atlas = atlas_json["atlas"]
-        
+
         self.configuration = {
             "name": atlas["name"],
             "description": strip_information(atlas["information"]),
@@ -212,7 +212,8 @@ class rasterstore(object):
             "aggregation_type": 2,
             "options": raster["options"],
             "acces_modifier": acces_modifier,
-            "rescalable": rescalable
+            "rescalable": rescalable,
+            "source": raster["source"]
             #  "source":
         }
 
@@ -221,17 +222,17 @@ class rasterstore(object):
 
         except TypeError:
             code = "-"
-            
+
         try:
-            org_uuid = raster["organisation"]["uuid"] 
-            
+            org_uuid = raster["organisation"]["uuid"]
+
         except TypeError:
-            print('Uuid of organisation not filled, using nens')
-            org_uuid = '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'
-            
+            print("Uuid of organisation not filled, using nens")
+            org_uuid = "61f5a464-c350-44c1-9bc7-d4b42d7f58cb"
 
         self.configuration.update({"observation_type": code})
-        self.configuration.update({"organisation":org_uuid})
+        self.configuration.update({"organisation": org_uuid})
+
 
 def strip_information(information):
     characters = [
