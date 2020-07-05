@@ -5,10 +5,11 @@ Created on Fri Aug 23 14:20:37 2019
 @author: chris.kerklaan
 TODO:
 
-    1. Overwrite metadata
-    2. Add to dataset
-    3. Voeg colormap toe
-    4. add rasterstore
+    1. Goede overwrite functie/patch
+    2. Toevoegen organisatie per raster
+    
+    
+    
 
 """
 
@@ -36,21 +37,29 @@ from nens_raster_uploader.project import (
 from nens_raster_uploader.rasterstore import rasterstore
 from nens_raster_uploader.edits import retile
 from nens_raster_uploader.geoblocks import geoblock_clip, uuid_store
+from nens_raster_uploader.raster import wrap_raster
 
 # Logging configuration options
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
+_mem_num = 0
 # test files
-# inifile = "C:/Users/chris.kerklaan/tools/nens_raster_uploader/data/instellingen_voorbeeld.ini"
+inifile = "C:/Users/chris.kerklaan/tools/instellingen/inzicht_in_het_achterland/nens_raster_uploader.ini"
 # sys.path.append("C:/Users/chris.kerklaan/tools")
 
 
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
+    parser.add_argument(
+        "inifile", metavar="INIFILE", help="Settings voor inifile."
+    )
     return parser
+
+
+def correct(in_path):
+    return f"/vsimem/raster_{_mem_num}.tif"
 
 
 def get_file_name_from_path(path):
@@ -115,13 +124,10 @@ def add_output_settings(setting):
         else:
             add_on = setting.bo_nummer
 
-        in_name = "{}_{}_{}".format(add_on, setting.organisatie, setting.onderwerp)
-        abstract_data = """
-            De laag {omschrijving} komt van {bron}. Voor meer informatie over 
-            deze laag, ga naar de klimaatatlas www.{bron}.klimaatatlas.net. 
-            """.format(
-            omschrijving=setting.onderwerp.lower(), bron=setting.organisatie.lower()
+        in_name = "{}_{}_{}".format(
+            add_on, setting.organisatie, setting.onderwerp
         )
+        abstract_data = ""
 
         styles = {
             "styles": "{}:{}:{}".format(
@@ -137,21 +143,27 @@ def add_output_settings(setting):
             "supplier_code": in_name,
             "aggregation_type": 2,
             "options": styles,
-            "acces_modifier": 0,  # public
+            "access_modifier": 0,  # public
             "rescalable": str(setting.rescalable).lower()
             #  "source":
         }
         setting.configuration = configuration
 
-    if not setting.organisatie_uuid is None:
-        setting.configuration.update({"organisation": setting.organisatie_uuid})
+    if not setting.organisatie_uuid == "None":
+        setting.configuration.update(
+            {"organisation": setting.organisatie_uuid}
+        )
 
     else:
         setting.configuration.update(
-            {"organisation": setting.store.get_organisation_uuid("nelen")}
+            {
+                "organisation": setting.store.get_organisation_uuid("nelen")[
+                    "uuid"
+                ]
+            }
         )
 
-    if not setting.dataset is None:
+    if not setting.dataset == "None":
         setting.configuration.update({"datasets": [setting.dataset]})
 
     slug = "{}:{}".format(
@@ -173,6 +185,7 @@ def batch_upload(inifile):
 
     in_paths = glob(setting.directory + "/*.tif")
     in_paths = in_paths + glob(setting.directory + "/*.vrt")
+    in_paths = in_paths + glob(setting.directory + "/*.asc")
     in_paths = in_paths + glob(setting.directory + "/*.json")
 
     present_paths = []
@@ -190,18 +203,18 @@ def batch_upload(inifile):
     succes = {}
     for count, path in enumerate(present_paths):
         log_time("info", percentage(count, len(present_paths)), path, "l")
-        try:
-            setting.in_path = path
-            setting = add_output_settings(setting)
+        # try:
+        setting.in_path = path
+        setting = add_output_settings(setting)
 
-            if not setting.skip:
-                print_dictionary(setting.__dict__, "Settings")
+        if not setting.skip:
+            print_dictionary(setting.__dict__, "Settings")
 
-                succes[setting.onderwerp] = upload(setting)
+            succes[setting.onderwerp] = upload(setting)
 
-        except Exception as e:
-            print(e)
-            failures[setting.onderwerp] = e
+        # except Exception as e:
+        #     print(e)
+        #     failures[setting.onderwerp] = e
 
     # log_time("info", "sleeping to decrease load on server....")
     # sleep(30)
@@ -211,27 +224,37 @@ def batch_upload(inifile):
 
 
 def upload(setting):
+    global _mem_num
     if setting.clip:
         clip_numbers = json.loads(setting.clip_nummers)
         geoblock = uuid_store(setting.json_dict["rasterstore"]["uuid"])
         graph = geoblock_clip(geoblock, clip_numbers)
         setting.configuration["source"] = {"graph": graph, "name": "endpoint"}
 
+    retile_dir = os.path.dirname(setting.in_path)
+    if setting.correct:
+        raster = wrap_raster(setting.in_path)
+        raster.write(
+            raster.array, f"/vsimem/raster_{_mem_num}.tif", raster.geotransform
+        )
+        retile_dir = os.path.dirname(setting.in_path)
+        setting.in_path = f"/vsimem/raster_{_mem_num}.tif"
+        _mem_num = _mem_num + 1
+
     if setting.update_metadata_only:
-        wms = setting.store.create(setting.configuration, setting.overwrite)
+        wms = setting.store.put_data(setting.configuration)
 
     elif setting.update_data_only:
-        for raster_part in retile(setting.in_path):
+        for raster_part in retile(setting.in_path, retile_dir):
             sleep(10)
             setting.store.post_data(raster_part)
 
     else:
         wms = setting.store.create(setting.configuration, setting.overwrite)
-        for raster_part in retile(setting.in_path):
+        for raster_part in retile(setting.in_path, retile_dir):
             setting.store.post_data(raster_part)
     sleep(15)
 
-    wms = None
     return wms
 
 

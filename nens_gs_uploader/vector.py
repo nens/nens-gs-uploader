@@ -12,15 +12,16 @@ import os
 import sys
 
 # Relevant paths
-BASE = "C:/Users/chris.kerklaan/tools"
-if BASE not in sys.path:
-    sys.path.append(BASE)
+# BASE = "I:/Data_Sources/work/C_Kerklaan/scripts"
+# if BASE not in sys.path:
+#     sys.path.append(BASE)
 
 # Third party imports
 import osr
 import ogr
 import gdal
 from tqdm import tqdm
+
 
 # Local imports
 from nens_gs_uploader.postgis import connect2pg_database
@@ -31,11 +32,13 @@ DRIVER_GDAL_MEM = gdal.GetDriverByName("MEM")
 DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
 DRIVER_OGR_GPKG = ogr.GetDriverByName("GPKG")
 DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
+DRIVER_OGR_JSON = ogr.GetDriverByName("GeoJSON")
 _mem_num = 0
 
 # Shapes
 POLYGON = "POLYGON (({x1} {y1},{x2} {y1},{x2} {y2},{x1} {y2},{x1} {y1}))"
 POINT = "POINT ({x1} {y1})"
+SHP_EXTENSIONS = ["shp", "prj", "dbf", "cpg", "qpj", "shx"]
 
 # Exceptions
 ogr.UseExceptions()
@@ -89,20 +92,26 @@ class wrap_shape(object):
     def set_attribute_filter(self, string):
         self.layer.SetAttributeFilter(string)
 
-    def get_field_names(self):
+    def get_all_field_names(self):
+        field_names = []
         for i in range(self.layer_defn.GetFieldCount()):
-            yield self.layer_defn.GetFieldDefn(i).GetName()
+            field_names.append(self.layer_defn.GetFieldDefn(i).GetName())
+        return field_names
 
     def get_fields(self):
         for field in self.layer:
             yield field
 
+    def delete_fields(self, field_name_list):
+        for field_name in field_name_list:
+            self.layer.DeleteField(self.layer.FindFieldIndex(field_name, 0))
+
+    def delete_field(self, field_name):
+        self.layer.DeleteField(self.layer.FindFieldIndex(field_name, 0))
+
     def get_field_defns(self):
         for i in range(self.layer_defn.GetFieldCount()):
             yield self.layer_defn.GetFieldDefn(i)
-
-    def get_all_field_names(self):
-        return [str(field_name) for field_name in self.get_field_names()]
 
     def create_dummy_layer(self):
         mem_datasource = DRIVER_OGR_MEM.CreateDataSource("mem")
@@ -172,7 +181,14 @@ class wrap_shape(object):
         self.layer = None
         self.ds = None
 
-    def write(self, ogr_layer, path_name, layer_name="vect", epsg=28992):
+    def write(
+        self,
+        ogr_layer,
+        path_name,
+        layer_name="vect",
+        epsg=28992,
+        overwrite="YES",
+    ):
 
         self.get_spatial_reference(epsg=epsg)
 
@@ -181,7 +197,12 @@ class wrap_shape(object):
         else:
             data_source = DRIVER_OGR_SHP.CreateDataSource(path_name)
 
-        out_layer = data_source.CreateLayer(layer_name, self.sr, self.geom_type)
+        out_layer = data_source.CreateLayer(
+            layer_name,
+            self.sr,
+            self.geom_type,
+            ["OVERWRITE={}".format(overwrite)],
+        )
 
         for i in range(self.layer_defn.GetFieldCount()):
             out_layer.CreateField(self.layer_defn.GetFieldDefn(i))
@@ -202,12 +223,23 @@ class wrap_shape(object):
             else:
                 self.addPolygon(geom.ExportToWkb(), out_lyr)
 
-    def addPolygon(self, simplePolygon, out_lyr):
-        featureDefn = out_lyr.GetLayerDefn()
-        polygon = ogr.CreateGeometryFromWkb(simplePolygon)
-        out_feat = ogr.Feature(featureDefn)
-        out_feat.SetGeometry(polygon)
-        out_lyr.CreateFeature(out_feat)
+    def rasterize(self, rows, columns, geotransform, nodata=-9999):
+        target_ds = DRIVER_GDAL_MEM.Create(
+            "ras.tif", columns, rows, 1, gdal.GDT_Int16
+        )
+
+        band = target_ds.GetRasterBand(1)
+        band.SetNoDataValue(nodata)
+        band.FlushCache()
+        target_ds.SetProjection(self.sr.ExportToWkt())
+        target_ds.SetGeoTransform(geotransform)
+
+        gdal.RasterizeLayer(target_ds, (1,), self.layer, burn_values=(1,))
+
+        array = target_ds.ReadAsArray()
+        target_ds = None
+
+        return array
 
     def change_source(self, in_ds, in_layer):
         self.ds = None
@@ -215,8 +247,10 @@ class wrap_shape(object):
         self.ds = in_ds
         self.layer = in_layer
 
-    def correct(self, layer, name="", epsg=28992):
-        self.ds_correct, self.layer_name = correct(layer, layer_name=name, epsg=epsg)
+    def correct(self, layer, name="", epsg=3857, driver="MEM"):
+        self.ds_correct, self.layer_name = correct(
+            layer, layer_name=name, epsg=epsg, driver=driver
+        )
         self.layer_correct = self.ds_correct[0]
         self.change_source(self.ds_correct, self.layer_correct)
 
@@ -249,9 +283,24 @@ def create_geom_transform(in_spatial_ref, out_epsg):
     return coordTrans, out_spatial_ref
 
 
-def create_mem_ds():
+def create_mem_ds(driver):
     global _mem_num
-    mem_datasource = DRIVER_OGR_SHP.CreateDataSource("/vsimem/mem{}".format(_mem_num))
+    if driver == "ESRI Shapefile":
+        mem_datasource = DRIVER_OGR_SHP.CreateDataSource(
+            "/vsimem/mem{}.shp".format(_mem_num)
+        )
+    elif driver == "GPKG":
+        mem_datasource = DRIVER_OGR_GPKG.CreateDataSource(
+            "/vsimem/mem{}.gpkg".format(_mem_num)
+        )
+    elif driver == "JSON":
+        mem_datasource = DRIVER_OGR_JSON.CreateDataSource(
+            "/vsimem/mem{}.json".format(_mem_num)
+        )
+    else:
+        mem_datasource = DRIVER_OGR_MEM.CreateDataSource(
+            "/vsimem/mem{}".format(_mem_num)
+        )
     _mem_num = _mem_num + 1
     return mem_datasource
 
@@ -263,12 +312,24 @@ def geom_transform(in_spatial_ref, out_epsg):
     return coordTrans
 
 
-def copymem(vector_layer, layer_name="mem", geom_type=ogr.wkbPolygon, spatial_ref=None):
+def delete_fields(ds, layer, field_name_list):
+    for field_name in field_name_list:
+        layer.DeleteField(layer.FindFieldIndex(field_name, 0))
+    return ds, layer
+
+
+def copymem(
+    vector_layer,
+    driver="MEM",
+    layer_name="mem",
+    geom_type=ogr.wkbPolygon,
+    spatial_ref=None,
+):
     """ makes a copy of the vector_layer and returns a memory ds and layer"""
     if spatial_ref is None:
         spatial_ref = vector_layer.GetSpatialRef()
 
-    out_datasource = create_mem_ds()
+    out_datasource = create_mem_ds(driver)
     out_layer = out_datasource.CreateLayer(layer_name, spatial_ref, geom_type)
 
     vector_layer_defn = vector_layer.GetLayerDefn()
@@ -289,11 +350,8 @@ def multipoly2poly(in_layer, out_layer):
 
     for count, in_feat in enumerate(in_layer):
         content = in_feat.items()
-        # for field_name in field_names:
-        #     content[field_name] = in_feat.GetField(field_name)
-
         geom = in_feat.GetGeometryRef()
-        if geom == None:
+        if not geom:
             print("warning", "FID {} has no geometry.".format(count))
             lost_features.append(in_feat.GetFID())
             continue
@@ -302,36 +360,68 @@ def multipoly2poly(in_layer, out_layer):
 
         if "multi" in geom_name.lower():
             for geom_part in geom:
-                addPolygon(geom_part.ExportToWkb(), content, out_layer)
+                add_polygon(geom_part.ExportToWkt(), content, out_layer)
+
         else:
-            addPolygon(geom.ExportToWkb(), content, out_layer)
+
+            add_polygon(geom.ExportToWkt(), content, out_layer)
+
+    multi = 0
+    fids = []
+    for feature in out_layer:
+        geom = feature.geometry()
+        if geom:
+            if "multi" in geom.GetGeometryName().lower():
+                multi = multi + 1
+                fids.append(feature.GetFID())
+
+    print("Got {} multis".format(multi))
+    if len(fids) > 0:
+        for fid in fids:
+            print(f"Deleting layer with fid {fid}")
+            out_layer.DeleteFeature(fid)
+            lost_features.append(fid)
+
+    out_layer.ResetReading()
 
     return lost_features
 
 
-def addPolygon(simple_polygon, content, out_lyr):
-    featureDefn = out_lyr.GetLayerDefn()
+def add_polygon(simple_polygon, content, out_layer):
+    featureDefn = out_layer.GetLayerDefn()
 
-    polygon = ogr.CreateGeometryFromWkb(simple_polygon)
+    polygon = ogr.CreateGeometryFromWkt(simple_polygon)
+    if not polygon.IsValid():
+        print("Invalid geom in singlepart")
+        polygon, valid = fix_geometry(polygon)
+
+        if not valid:
+            print("warning", "feature with invalid geometry")
+        else:
+            print("Fixed")
+
     out_feat = ogr.Feature(featureDefn)
     out_feat.SetGeometry(polygon)
 
     for key, value in content.items():
+        key = key[:10]  # Esri Shapefile
         try:
             out_feat.SetField(key, value)
         except Exception as e:
             print(e)
 
-    out_lyr.CreateFeature(out_feat)
+    out_layer.CreateFeature(out_feat)
 
 
 def append_feature(layer, layer_defn, geometry, attributes):
     """ Append geometry and attributes as new feature. """
     feature = ogr.Feature(layer_defn)
-    feature.SetGeometry(geometry)
+    wkt = geometry.ExportToWkt()
+    feature.SetGeometry(ogr.CreateGeometryFromWkt(wkt))
     for key, value in attributes.items():
         feature[str(key)] = value
     layer.CreateFeature(feature)
+    feature = None
     return layer
 
 
@@ -362,6 +452,7 @@ def fix_geometry(geometry):
     if geometry is None:
         return None, False
 
+    geometry = geometry.Clone()
     geom_name = geometry.GetGeometryName()
 
     # check pointcount if linestring
@@ -381,21 +472,10 @@ def fix_geometry(geometry):
             log_time("error", e)
             return geometry, False
 
-    # most likely does not do anything
-    # check slivers
-    # if not geometry.IsValid():
-    #     perimeter = geometry.Boundary().Length()
-    #     area = geometry.GetArea()
-    #     sliver = float(perimeter / area)
-
-    #     if sliver < 1:
-    #         wkt = geometry.ExportToWkt()
-    #         geometry = ogr.CreateGeometryFromWkt(wkt)
-
     return geometry, geometry.IsValid()
 
 
-def correct(in_layer, layer_name="", epsg=3857):
+def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
     """
     This function standardizes a vector layer:
         1. Multipart to singleparts
@@ -426,6 +506,11 @@ def correct(in_layer, layer_name="", epsg=3857):
         # retrieving lost features
         lost_features = []
         in_feature_count = in_layer.GetFeatureCount()
+        layer_defn = in_layer.GetLayerDefn()
+
+        in_field_names = []
+        for i in range(layer_defn.GetFieldCount()):
+            in_field_names.append(layer_defn.GetFieldDefn(i).GetName())
 
         # reset reading
         in_layer.ResetReading()
@@ -434,7 +519,10 @@ def correct(in_layer, layer_name="", epsg=3857):
         log_time("info", "check - Name length")
         if len(layer_name) + 10 > 64:
             log_time("error", "laagnaam te lang, 50 characters max.")
-            log_time("info", "formatting naar 50 met deze naam: %s" % layer_name[:50])
+            log_time(
+                "info",
+                "formatting naar 50 met deze naam: %s" % layer_name[:50],
+            )
             layer_name = layer_name[:50]
 
         # Create output dataset and force dataset to multiparts
@@ -448,11 +536,15 @@ def correct(in_layer, layer_name="", epsg=3857):
             output_geom_type = 1  # point
         else:
             log_time(
-                "Error", "Geometry could not be translated to singlepart %s" % geom_name
+                "Error",
+                "Geometry could not be translated to singlepart %s"
+                % geom_name,
             )
             raise TypeError()
 
-        mem_datasource, mem_layer = copymem(in_layer, geom_type=output_geom_type)
+        mem_datasource, mem_layer = copymem(
+            in_layer, driver=driver, geom_type=output_geom_type
+        )
 
         log_time("info", "check - Multipart to singlepart")
         lost_feat = multipoly2poly(in_layer, mem_layer)
@@ -464,7 +556,9 @@ def correct(in_layer, layer_name="", epsg=3857):
 
         in_spatial_ref = in_layer.GetSpatialRef()
         # print(in_spatial_ref, int(epsg))
-        reproject, out_spatial_ref = create_geom_transform(in_spatial_ref, int(epsg))
+        reproject, out_spatial_ref = create_geom_transform(
+            in_spatial_ref, int(epsg)
+        )
 
         flatten = False
         if "3D" in geom_name:
@@ -475,11 +569,16 @@ def correct(in_layer, layer_name="", epsg=3857):
         elif geom_type < 0:
             log_time("error", "geometry invalid, most likely has a z-type")
             raise ValueError(
-                "geometry invalid, most likely has a z-type", "geom type: ", geom_name
+                "geometry invalid, most likely has a z-type",
+                "geom type: ",
+                geom_name,
             )
 
         out_datasource, out_layer = copymem(
-            in_layer, geom_type=output_geom_type, spatial_ref=out_spatial_ref
+            in_layer,
+            driver=driver,
+            geom_type=output_geom_type,
+            spatial_ref=out_spatial_ref,
         )
 
         print("info", "check - Reproject layer to {}".format(str(epsg)))
@@ -492,7 +591,9 @@ def correct(in_layer, layer_name="", epsg=3857):
                 print(e)
                 print(out_feat.GetFID())
             if not valid:
-                log_time("warning", "geometry invalid even with buffer, skipping")
+                log_time(
+                    "warning", "geometry invalid even with buffer, skipping"
+                )
                 lost_features.append(out_feat.GetFID())
                 continue
 
@@ -509,12 +610,10 @@ def correct(in_layer, layer_name="", epsg=3857):
             out_layer.CreateFeature(out_feat)
 
         print("info", "check  - delete ogc_fid if exists")
-        out_layer_defn = out_layer.GetLayerDefn()
-        for n in range(out_layer_defn.GetFieldCount()):
-            field = out_layer_defn.GetFieldDefn(n)
-            if field.name == "ogc_fid":
-                out_layer.DeleteField(n)
-                break
+        if "ogc_fid" in out_layer[0].items().keys():
+            out_datasource, out_layer = delete_fields(
+                out_datasource, out_layer, ["ogc_fid"]
+            )
 
         print("info", "check  - Features count")
         out_feature_count = out_layer.GetFeatureCount()
@@ -522,15 +621,21 @@ def correct(in_layer, layer_name="", epsg=3857):
         if len(lost_features) > 0:
             log_time(
                 "warning",
-                "Lost {} features during corrections".format(len(lost_features)),
+                "Lost {} features during corrections".format(
+                    len(lost_features)
+                ),
             )
             log_time("warning", "FIDS: {}".format(lost_features))
 
         elif in_feature_count > out_feature_count:
-            log_time("warning", "In feature count greater than out feature count")
+            log_time(
+                "warning", "In feature count greater than out feature count"
+            )
 
         else:
-            print("info", "check  - Features count {}".format(out_feature_count))
+            print(
+                "info", "check  - Features count {}".format(out_feature_count)
+            )
 
     except Exception as e:
         print(e)
@@ -570,13 +675,6 @@ def dissolve(vector_layer):
             multi.AddGeometryDirectly(ogr.CreateGeometryFromWkt(wkt))
     union = multi.UnionCascaded()
 
-    # if multipoly is False:
-    #     for geom in union:
-    #         poly = ogr.CreateGeometryFromWkb(geom.ExportToWkb())
-    #         feat = ogr.Feature(out_layer_defn)
-    #         feature.SetGeometry(poly)
-    #         out_layer.CreateFeature(feat)
-    # else:
     out_feat = ogr.Feature(out_layer_defn)
     out_feat.SetGeometry(union)
     out_layer.CreateFeature(out_feat)
@@ -614,7 +712,9 @@ def difference(vector_layer, difference_layer):
     else:
         pass
 
-    out_datasource, out_layer = copymem(vector_layer, geom_type=vector_layer_geom_type)
+    out_datasource, out_layer = copymem(
+        vector_layer, geom_type=vector_layer_geom_type
+    )
     vector_layer_defn = vector_layer.GetLayerDefn()
 
     print("starting to make a difference_layer")
@@ -648,7 +748,10 @@ def difference(vector_layer, difference_layer):
                     # Check if geometry collection
                     if diff_part_type == ogr.wkbGeometryCollection:
                         for geom_part in difference:
-                            if geom_part.GetGeometryType() == vector_layer_geom_type:
+                            if (
+                                geom_part.GetGeometryType()
+                                == vector_layer_geom_type
+                            ):
                                 vector_geom, valid = fix_geometry(geom_part)
 
                     else:
@@ -754,7 +857,6 @@ def clip(in_layer, clip_geom):
             print(e)
 
     out_layer = None
-
     return out_datasource
 
 
@@ -769,7 +871,9 @@ def vector_to_geom(extent_path, epsg=28992):
 
 if __name__ == "__main__":
     extent_path = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/extent/extent_dissolved.shp"
-    input_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/fixed/fixed_1"
+    input_dir = (
+        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/fixed/fixed_1"
+    )
     output_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/output"
 
     extent_vector = wrap_shape(extent_path)
@@ -783,7 +887,9 @@ if __name__ == "__main__":
         if vector.split(".")[1] != "shp":
             continue
         vector_path = os.path.join(input_dir, vector)
-        vector_out_path = os.path.join(output_dir, vector.split(".")[0] + "_clip.shp")
+        vector_out_path = os.path.join(
+            output_dir, vector.split(".")[0] + "_clip.shp"
+        )
         if os.path.exists(vector_out_path):
             print(vector_out_path, "exists, skip")
             continue

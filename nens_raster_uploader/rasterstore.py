@@ -7,7 +7,7 @@
 
 # Third-party imports
 import json
-from requests import get, post, codes, delete
+from requests import get, post, codes, delete, put
 from tqdm import tqdm
 
 # Local imports
@@ -64,6 +64,19 @@ class rasterstore(object):
         else:
             return None
 
+    def dataset_search(self, page, dataset, page_size=50):
+        r = get(
+            url=self.raster_url
+            + "?datasets__slug={}&page={}&page_size={}".format(
+                str(dataset), str(page), str(page_size)
+            ),
+            headers=self.get_headers,
+        )
+        if r.status_code == 200:
+            return r.json()["results"]
+        else:
+            return None
+
     def match_results_to_slug(self, results, slug):
         for raster in results:
             if slug == raster["wms_info"]["layer"]:
@@ -86,14 +99,24 @@ class rasterstore(object):
                     return result
 
             elif search == "organisation":
-                results = self.organisation_search(page, organisation, page_size=1000)
+                results = self.organisation_search(
+                    page, organisation, page_size=1000
+                )
                 result = self.match_results_to_slug(results, slug)
                 if result is not None:
                     return result
             else:
                 pass
-
         return None
+
+    def get_raster_by_dataset(self, dataset_slug, raster_slug, pages=10):
+        for page in tqdm(range(1, pages + 1)):
+            results = self.dataset_search(page, dataset_slug)
+            result = self.match_results_to_slug(results, raster_slug)
+            if result is not None:
+                return result, True
+
+        return None, False
 
     def get_store(self, search_terms, slug, method="search", uuid=None):
         if method == "search":
@@ -103,7 +126,9 @@ class rasterstore(object):
                 search_terms_new.append(term.upper())
                 search_terms_new.append(term.lower())
 
-            search_terms = list(set(search_terms_new + [slug] + slug.split(":")))
+            search_terms = list(
+                set(search_terms_new + [slug] + slug.split(":"))
+            )
             # print("search terms..", search_terms)
 
             for search_term in list(set(search_terms)):
@@ -161,8 +186,15 @@ class rasterstore(object):
 
     def create(self, configuration, overwrite=False):
         if overwrite:
-            raster = self.get_raster_by_slug(configuration["slug"])
-            if raster is not None:
+            if isinstance(configuration["datasets"], object):
+                raster, raster_found = self.get_raster_by_dataset(
+                    configuration["datasets"][0], configuration["slug"]
+                )
+
+            if not raster_found:
+                raster = self.get_raster_by_slug(configuration["slug"])
+
+            if raster_found:
                 self.delete_store(raster["uuid"])
             else:
                 print("Overwrite true but store does not exist")
@@ -191,7 +223,9 @@ class rasterstore(object):
         print(path)
         url = self.raster_url + self.raster_uuid + "/data/"
 
-        r = post(url=url, files={"file": open(path, "rb")}, headers=self.get_headers)
+        r = post(
+            url=url, files={"file": open(path, "rb")}, headers=self.get_headers
+        )
 
         if not r.status_code == codes.ok:
             print("post data failure", r.status_code)
@@ -200,7 +234,23 @@ class rasterstore(object):
         else:
             print("post data succes", r.status_code)
 
-    def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
+    def put_data(self, configuration):
+        r = put(
+            url=self.raster_url,
+            data=json.dumps(configuration),
+            headers=self.get_headers,
+        )
+
+        if not r.status_code == codes.ok:
+            print("put data failure", r.status_code)
+            print(r.json())
+
+        else:
+            print("put data succes", r.status_code)
+
+    def atlas2store(
+        self, atlas_json, supplier, rescalable=False, acces_modifier=0
+    ):
         raster = atlas_json["rasterstore"]
         atlas = atlas_json["atlas"]
 
@@ -211,7 +261,7 @@ class rasterstore(object):
             "supplier_code": raster["name"],
             "aggregation_type": 2,
             "options": raster["options"],
-            "acces_modifier": acces_modifier,
+            "access_modifier": acces_modifier,
             "rescalable": rescalable,
             "source": raster["source"]
             #  "source":

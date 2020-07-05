@@ -25,7 +25,9 @@ class wrap_sld:
 
     def get_all_property_names(self):
         self.items = self.root_copy.getElementsByTagName("ogc:PropertyName")
-        self.property_names = [item.firstChild.nodeValue for item in self.items]
+        self.property_names = [
+            item.firstChild.nodeValue for item in self.items
+        ]
         return self.property_names
 
     def _type(self):
@@ -48,6 +50,12 @@ class wrap_sld:
         for item in items:
             original = item.firstChild.nodeValue
             item.firstChild.nodeValue = original.lower()
+
+    def cut_len_all_property_names(self, _len=10):
+        items = self.root_copy.getElementsByTagName("ogc:PropertyName")
+        for item in items:
+            original = item.firstChild.nodeValue
+            item.firstChild.nodeValue = original[:_len]
 
     def field_in_property_names(self, field_name):
         if field_name in self.get_all_property_names():
@@ -95,7 +103,9 @@ def match_sld_fields(sld_field_name, shape_object):
 
     matches = {}
     for shape_field_name in shape_object.get_all_field_names():
-        matches[shape_field_name] = percentage_match(shape_field_name, sld_field_name)
+        matches[shape_field_name] = percentage_match(
+            shape_field_name, sld_field_name
+        )
 
     most_matching_field_name = sort_dictionary(matches)[0][0]
     most_matching_field_value = sort_dictionary(matches)[0][1]
@@ -110,7 +120,9 @@ def replace_sld_field_based_on_shape(shape_object, sld_object, sld_field_name):
           searching for a high percent match """
     )
 
-    shape_field_name, match_value = match_sld_fields(sld_field_name, shape_object)
+    shape_field_name, match_value = match_sld_fields(
+        sld_field_name, shape_object
+    )
     if match_value < 0.8:
         print("warning, matching lower than 80%")
 

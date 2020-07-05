@@ -109,7 +109,9 @@ class _ResourceBase(ResourceInfo):
     @property
     def store(self):
         if not self._store:
-            self._store = self.catalog.get_store(self._store_name, self._workspace_name)
+            self._store = self.catalog.get_store(
+                self._store_name, self._workspace_name
+            )
         return self._store
 
     @property
@@ -283,7 +285,9 @@ class WmsLayer(ResourceInfo):
     latlon_bbox = xml_property("latLonBoundingBox", bbox)
     projection_policy = xml_property("projectionPolicy")
     enabled = xml_property("enabled", lambda x: x.text == "true")
-    advertised = xml_property("advertised", lambda x: x.text == "true", default=True)
+    advertised = xml_property(
+        "advertised", lambda x: x.text == "true", default=True
+    )
     metadata_links = xml_property("metadataLinks", metadata_link_list)
 
     writers = {

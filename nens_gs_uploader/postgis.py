@@ -28,22 +28,7 @@ ogr.UseExceptions()
 progress = gdal.TermProgress_nocb
 
 # Global within script
-REST = {
-    "STAGING": "https://maps2.staging.lizard.net/geoserver/rest/",
-    "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/rest/",
-    "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/rest/",
-    "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/rest/",
-    "PROJECTEN_KLIMAATATLAS": "https://maps1.project.lizard.net/geoserver/rest/",
-    "PROJECTEN_LIZARD": "https://maps1.project.lizard.net/geoserver/rest/",
-}
-SERVERS = {
-    "STAGING": "https://maps2.staging.lizard.net/geoserver/",
-    "PRODUCTIE_KLIMAATATLAS": "https://maps1.klimaatatlas.net/geoserver/",
-    "PRODUCTIE_FLOODING": "https://flod-geoserver1.lizard.net/geoserver/",
-    "PRODUCTIE_LIZARD": "https://geoserver9.lizard.net/geoserver/",
-    "PROJECTEN_KLIMAATATLAS": "https://maps1.project.lizard.net/geoserver/",
-    "PROJECTEN_LIZARD": "https://maps1.project.lizard.net/geoserver/",
-}
+
 
 PG_DATABASE = {
     "STAGING": pg_staging,
@@ -54,6 +39,33 @@ PG_DATABASE = {
     "PROJECTEN_LIZARD": pg_project_lizard,
     "PRODUCTIE_FLOODING": pg_flooding,
 }
+
+
+def check_ogr_columns(ds, layer):
+    """
+    Checks if ogr column values are compatible with postgis, alters 
+    to None when needed.     
+
+    Parameters
+    ----------
+    ds : OGR datasource
+    layer : OGR Layer
+
+    Returns
+    -------
+    ds : OGR datasource
+    layer: OGR Layer
+
+    """
+    layer.ResetReading()
+
+    for feature in layer:
+        for key, value in feature.items().items():
+            if "/" in str(value):
+                feature[key] = None
+                layer.SetFeature(feature)
+
+    return ds, layer
 
 
 def connect2pg_database(database, con_type="ogr"):
@@ -71,32 +83,37 @@ def connect2pg_database(database, con_type="ogr"):
         return connection
 
 
-def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
+def copy2pg_database(
+    ds, ds_layer, layer, layer_name, schema="public", overwrite="YES"
+):
+
+    # ds, layer = check_ogr_columns(ds_layer, layer)
+
     options = [
-        "OVERWRITE=YES",
+        "OVERWRITE={}".format(overwrite),
         "SCHEMA={}".format(schema),
         "SPATIAL_INDEX=GIST",
         "FID=ogc_fid",
         "PRECISION=NO",
     ]
     try:
-        geom_type = in_layer.GetGeomType()
+        geom_type = layer.GetGeomType()
 
         ogr.RegisterAll()
-        new_layer = datasource.CreateLayer(
-            layer_name, in_layer.GetSpatialRef(), geom_type, options
+        new_layer = ds.CreateLayer(
+            layer_name, layer.GetSpatialRef(), geom_type, options
         )
-        for x in range(in_layer.GetLayerDefn().GetFieldCount()):
-            new_layer.CreateField(in_layer.GetLayerDefn().GetFieldDefn(x))
+        for x in range(layer.GetLayerDefn().GetFieldCount()):
+            new_layer.CreateField(layer.GetLayerDefn().GetFieldDefn(x))
 
-        in_layer.ResetReading()
+        layer.ResetReading()
         new_layer.StartTransaction()
-        for fid in tqdm(range(in_layer.GetFeatureCount())):
+        for fid in tqdm(range(layer.GetFeatureCount())):
             try:
-                new_feature = in_layer.GetFeature(fid)
+                new_feature = layer.GetFeature(fid)
                 new_feature.SetFID(-1)
                 new_layer.CreateFeature(new_feature)
-                if x % 128 == 0:
+                if fid % 128 == 0:
                     new_layer.CommitTransaction()
                     new_layer.StartTransaction()
             except Exception as e:
@@ -107,7 +124,7 @@ def copy2pg_database(datasource, in_layer, layer_name, schema="public"):
     except Exception as e:
         print("Got exception", e, "trying copy layer")
 
-        new_layer = datasource.CopyLayer(in_layer, layer_name, options)
+        new_layer = ds.CopyLayer(layer, layer_name, options)
 
     finally:
         if new_layer.GetFeatureCount() == 0:

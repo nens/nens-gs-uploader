@@ -1,0 +1,13 @@
+in directory:
+	virtual env
+in directory
+	bin/python
+
+Commands
+python -m venv . --> in huidige directory om een schone python te maken
+Scripts/ pip install
+
+python setup.py sdist om een tar bestandje te maken die je kan pip-installen
+
+conda create -n catalogue python=3.6.9 configparser=3.7.4 gdal=2.4.1 tqdm=4.40.2 json5=0.8.5  beautifulsoup4=4.8.1 psycopg2=2.8.4
+pip install gsconfig-py=1.0.7 

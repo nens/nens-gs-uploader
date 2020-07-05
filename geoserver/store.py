@@ -58,7 +58,9 @@ class DataStore(ResourceInfo):
     enabled = xml_property("enabled", lambda x: x.text == "true")
     name = xml_property("name")
     type = xml_property("type")
-    connection_parameters = xml_property("connectionParameters", key_value_pairs)
+    connection_parameters = xml_property(
+        "connectionParameters", key_value_pairs
+    )
 
     writers = {
         "enabled": write_bool("enabled"),
@@ -83,7 +85,9 @@ class DataStore(ResourceInfo):
         xml = self.catalog.get_xml(res_url)
 
         def ft_from_node(node):
-            return featuretype_from_index(self.catalog, self.workspace, self, node)
+            return featuretype_from_index(
+                self.catalog, self.workspace, self, node
+            )
 
         # if name passed, return only one FeatureType,
         # otherwise return all FeatureTypes in store:
@@ -116,7 +120,9 @@ class UnsavedDataStore(DataStore):
     def href(self):
         return urljoin(
             self.catalog.service_url,
-            "workspaces/{}/datastores/?name={}".format(self.workspace.name, self.name),
+            "workspaces/{}/datastores/?name={}".format(
+                self.workspace.name, self.name
+            ),
         )
 
 
@@ -164,7 +170,9 @@ class CoverageStore(ResourceInfo):
         xml = self.catalog.get_xml(res_url)
 
         def cov_from_node(node):
-            return coverage_from_index(self.catalog, self.workspace, self, node)
+            return coverage_from_index(
+                self.catalog, self.workspace, self, node
+            )
 
         # if name passed, return only one Coverage,
         # otherwise return all Coverages in store:
@@ -217,7 +225,9 @@ class WmsStore(ResourceInfo):
     def href(self):
         return urljoin(
             self.catalog.service_url,
-            "workspaces/{}/wmsstores/{}.xml".format(self.workspace.name, self.name),
+            "workspaces/{}/wmsstores/{}.xml".format(
+                self.workspace.name, self.name
+            ),
         )
 
     enabled = xml_property("enabled", lambda x: x.text == "true")
@@ -247,7 +257,9 @@ class WmsStore(ResourceInfo):
         xml = self.catalog.get_xml(res_url)
 
         def wl_from_node(node):
-            return wmslayer_from_index(self.catalog, self.workspace, self, node)
+            return wmslayer_from_index(
+                self.catalog, self.workspace, self, node
+            )
 
         # if name passed, return only one layer,
         # otherwise return all layers in store:
@@ -260,7 +272,9 @@ class WmsStore(ResourceInfo):
         if available:
             return [str(node.text) for node in xml.findall(layer_name_attr)]
         else:
-            return [wl_from_node(node) for node in xml.findall(layer_name_attr)]
+            return [
+                wl_from_node(node) for node in xml.findall(layer_name_attr)
+            ]
 
 
 class UnsavedWmsStore(WmsStore):
@@ -269,12 +283,19 @@ class UnsavedWmsStore(WmsStore):
     def __init__(self, catalog, name, workspace):
         super(UnsavedWmsStore, self).__init__(catalog, workspace, name)
         self.dirty.update(
-            {"name": name, "enabled": True, "capabilitiesURL": "", "type": "WMS"}
+            {
+                "name": name,
+                "enabled": True,
+                "capabilitiesURL": "",
+                "type": "WMS",
+            }
         )
 
     @property
     def href(self):
         return urljoin(
             self.catalog.service_url,
-            "workspaces/{}/wmsstores/?name={}".format(self.workspace.name, self.name),
+            "workspaces/{}/wmsstores/?name={}".format(
+                self.workspace.name, self.name
+            ),
         )

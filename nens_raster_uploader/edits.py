@@ -10,8 +10,8 @@ import shutil
 from nens_raster_uploader.gdal_retile import main
 
 
-def retile(raster_path):
-    temporary_directory = os.path.join(os.path.dirname(raster_path), "temp")
+def retile(raster_path, retile_dir):
+    temporary_directory = os.path.join(retile_dir, "temp")
     if os.path.exists(temporary_directory):
         shutil.rmtree(temporary_directory)
     os.mkdir(temporary_directory)

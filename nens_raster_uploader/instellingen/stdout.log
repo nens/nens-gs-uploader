@@ -1,0 +1,306 @@
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-06 17:55:01.551050 - 0:00:00.637567 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-06 17:55:29.199077 - 0:00:00.520165 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-06 17:56:08.511430 - 0:00:00.489482 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x00000296029D60F0>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite_store:				False
+	update_metadata_only:				False
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x0000029602AE0D68>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas']}
+	skip:				False
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-06 17:58:48.818842 - 0:00:00.499453 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-06 17:59:01.627827 - 0:00:00.499793 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x000001B853384128>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite_store:				False
+	update_metadata_only:				False
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x000001B853464DD8>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem'}
+	skip:				False
+Searching 10 pages
+Overwrite true but store does not exist
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 09:01:30.630186 - 0:00:02.132527 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x0000019564C94240>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite_store:				False
+	update_metadata_only:				False
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x000001956556EEF0>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem'}
+	skip:				False
+Searching 10 pages
+Overwrite true but store does not exist
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 09:03:51.811231 - 0:00:00.449802 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x000002384FC14240>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite_store:				False
+	update_metadata_only:				False
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x00000238504EEEF0>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem'}
+	skip:				False
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 09:04:24.324201 - 0:00:00.474167 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x000001F8F2484128>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite:				False
+	update_metadata_only:				False
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x000001F8F2D64DD8>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem'}
+	skip:				False
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 09:05:25.701531 - 0:00:00.450162 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x00000285BD7A4240>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite:				False
+	update_metadata_only:				True
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x00000285BE07EEB8>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem'}
+	skip:				False
+{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'observation_type': 'Waterdepth', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {'pawn'}, 'acces_modifier': 0, 'rescalable': False, 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:Bodem', 'source': {'graph': {'gemeente_ids': ['geoblocks.raster.sources.RasterStoreSource', 'file:///mnt/rastprod/stores/nelen-schuurmans/2019-gemeente-ids-3yz1ll9j'], 'area_of_interest_1': ['geoblocks.raster.misc.Reclassify', 'gemeente_ids', [[274, 1], [162, 1], [50000, 0]], True], 'endpoint': ['geoblocks.raster.misc.Clip', 'store', 'area_of_interest_1'], 'store': ['lizard_nxt.blocks.LizardRasterSource', '141457b6-d890-46d7-8eab-bb00dd45c300']}, 'name': 'endpoint'}}
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 10:34:52.707006 - 0:00:00.710960 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x000002471F3A4128>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite:				False
+	update_metadata_only:				True
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x000002471FC84DD8>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {}, 'acces_modifier': 0, 'rescalable': False, 'observation_type': '-', 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:bodem'}
+	skip:				False
+create store succes 201
+
+ Paths:
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+		C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+2020-02-07 10:37:27.497097 - 0:00:00.515615 - 0.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x00000177B54F4160>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite:				False
+	update_metadata_only:				True
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x00000177B55D4E10>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\bodem.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37041, 'url': 'https://demo.lizard.net/api/v4/rasters/141457b6-d890-46d7-8eab-bb00dd45c300/', 'name': 'demo:soil', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'demo:soil', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/soil/pawn']}, 'name': 'RasterStoreSource_412a6ed7ae194b2685e62dd0f3a2c4d1', 'url': 'https://demo.lizard.net/api/v4/geoblocks/00c6ea68-4505-4e18-9df2-81decbcf1489/'}, 'spatial_bounds': {'west': 3.254224069512271, 'east': 7.242902080474426, 'north': 53.53904356114477, 'south': 50.73441464606542}, 'projection': 'EPSG:28992', 'origin_x': 140000.0, 'origin_y': 606250.0, 'pixelsize_x': 0.5, 'pixelsize_y': -0.5, 'last_modified': '2020-01-03T14:25:27.992034Z', 'uuid': '141457b6-d890-46d7-8eab-bb00dd45c300', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'demo:soil'}, 'writable': True, 'datasets': [{'slug': 'fluvius_klimaatatlas', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}}]}, 'atlas': {'type': 'wms', 'name': 'Bodem', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'demo:soil', 'information': '<p><strong>Verantwoording</strong></p>\n<p>Bron: Bodemfysische Eenheden Kaart (BOFEK2012).</p>', 'styles': 'pawn', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 70, 'attribution': 'Copyright, Lizard 2017', 'active': True, 'dynamicScalable': False, 'legend': {'name': 'bodem', 'type': 'categorical', 'steps': [{'label': 'Zwak lemig fijn zand', 'style': 'point', 'color': '#fe8900', 'symbol': ''}, {'label': 'Sterk lemig fijn zand', 'style': 'point', 'color': '#bcfea4', 'symbol': ''}, {'label': 'Grof zand', 'style': 'point', 'color': '#fea4a4', 'symbol': ''}, {'label': 'Enkeerdgronden', 'style': 'point', 'color': '#a04932', 'symbol': ''}, {'label': 'Licht klei met homogeen profiel', 'style': 'point', 'color': '#00db18', 'symbol': ''}, {'label': 'Klei op fijn zand', 'style': 'point', 'color': '#97fe00', 'symbol': ''}, {'label': 'Klei met zware tussenlaag of ondergrond', 'style': 'point', 'color': '#3b6800', 'symbol': ''}, {'label': 'Zavel met homogeen profiel', 'style': 'point', 'color': '#68db00', 'symbol': ''}, {'label': 'Leemarm zand', 'style': 'point', 'color': '#febe00', 'symbol': ''}, {'label': 'Stuifzand', 'style': 'point', 'color': '#e1e100', 'symbol': ''}, {'label': 'Klei op grof zand', 'style': 'point', 'color': '#d2fe00', 'symbol': ''}, {'label': 'Zwak lemig fijn zand op leem', 'style': 'point', 'color': '#a07d32', 'symbol': ''}, {'label': 'Keileem', 'style': 'point', 'color': '#B22222', 'symbol': ''}, {'label': 'Veen', 'style': 'point', 'color': '#800080', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'soil', 'slug': 'demo:soil'}}
+	configuration:				{'name': 'Bodem', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'description': 'VerantwoordingBron: Bodemfysische Eenheden Kaart (BOFEK2012).', 'supplier': 'chris.kerklaan', 'supplier_code': 'demo:soil', 'aggregation_type': 2, 'options': {}, 'acces_modifier': 0, 'rescalable': False, 'observation_type': '-', 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:bodem'}
+	skip:				False
+	onderwerp:				Bodem
+create store succes 201
+2020-02-07 10:37:43.607663 - 0:00:16.110566 - 50.0% - C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+
+ Settings:
+	ini:				tools/nens_raster_uploader/data/instellingen_voorbeeld.ini
+	ini_location:				tools/nens_raster_uploader/data
+	config:				<configparser.RawConfigParser object at 0x00000177B54F4160>
+	key:				[274,162]
+	bo_nummer:				1830
+	organisatie:				twn
+	product_naam:				klimaatatlas
+	eigen_naam:				chris.kerklaan
+	project_nummer:				u0011
+	dataset:				twn_klimaatatlas
+	organisatie_uuid:				fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a
+	directory:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster
+	overwrite:				False
+	update_metadata_only:				True
+	update_data_only:				False
+	project:				False
+	clip:				True
+	clip_nummers:				[274,162]
+	store:				<nens_raster_uploader.rasterstore.rasterstore object at 0x00000177B55D4E10>
+	in_path:				C:\Users\chris.kerklaan\Documents\Projecten\twn_catalogus\extract_raster\drooglegging.json
+	json:				True
+	json_dict:				{'rasterstore': {'id': 37044, 'url': 'https://demo.lizard.net/api/v4/rasters/5e07e2a4-e504-457c-aae7-75abc53bd711/', 'name': 'intern_nl_klimaatatlas_drooglegging', 'organisation': {'url': 'https://demo.lizard.net/api/v4/organisations/61f5a464-c350-44c1-9bc7-d4b42d7f58cb/', 'name': 'Nelen & Schuurmans', 'uuid': '61f5a464-c350-44c1-9bc7-d4b42d7f58cb'}, 'shared_with': [], 'observation_type': None, 'description': 'intern_nl_klimaatatlas_drooglegging', 'supplier': None, 'supplier_code': None, 'aggregation_type': 'none', 'options': {}, 'rescalable': False, 'temporal': False, 'interval': None, 'access_modifier': 'Private', 'first_value_timestamp': '1970-01-01T00:00:00Z', 'last_value_timestamp': '1970-01-01T00:00:00Z', 'source': {'graph': {'MaskBelow_61484e0a03bbcf23fc92283fa6e1bbe6': ['dask_geomodeling.raster.misc.MaskBelow', 'Subtract_ea2a3d132ef8c288e4c3bdbf417f4692', 0], 'Subtract_ea2a3d132ef8c288e4c3bdbf417f4692': ['dask_geomodeling.raster.elemwise.Subtract', 'Group_a2c99fc2463a01d7504ea83072e76e96', 'RasterStoreSource_21665768393e4721ff2a5bef82c981e9'], 'RasterStoreSource_21665768393e4721ff2a5bef82c981e9': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/intern/nl/klimaatatlas/peilen'], 'Group_a2c99fc2463a01d7504ea83072e76e96': ['dask_geomodeling.raster.combine.Group', 'RasterStoreSource_57b3034863c7de78867e4630f219d749', 'RasterStoreSource_abb560d711966a928b14e17eaf19e176', 'RasterStoreSource_48f4b0f26c8cd53a568754653f7ec0a7', 'RasterStoreSource_a3527d34e6c2c857bc3cba6ea18211ce'], 'RasterStoreSource_48f4b0f26c8cd53a568754653f7ec0a7': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/dem/water'], 'RasterStoreSource_57b3034863c7de78867e4630f219d749': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/ahn2/non'], 'RasterStoreSource_a3527d34e6c2c857bc3cba6ea18211ce': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/dem/bag'], 'RasterStoreSource_abb560d711966a928b14e17eaf19e176': ['raster_store.blocks.RasterStoreSource', 'file:///mnt/rastprod/stores/ahn2/int']}, 'name': 'MaskBelow_61484e0a03bbcf23fc92283fa6e1bbe6', 'url': 'https://demo.lizard.net/api/v4/geoblocks/a87ad1af-d3ea-44a8-b214-4f801d5e5e85/'}, 'spatial_bounds': {'west': 4.084582044107663, 'east': 5.299726228844806, 'north': 53.18180260639748, 'south': 51.89886670938002}, 'projection': 'EPSG:28992', 'origin_x': None, 'origin_y': None, 'pixelsize_x': None, 'pixelsize_y': None, 'last_modified': '2019-10-29T15:17:05.395954Z', 'uuid': '5e07e2a4-e504-457c-aae7-75abc53bd711', 'wms_info': {'endpoint': 'https://demo.lizard.net/wms/', 'layer': 'intern:nl:klimaatatlas:drooglegging'}, 'writable': True, 'datasets': []}, 'atlas': {'type': 'wms', 'name': 'Drooglegging', 'url': 'https://demo.lizard.net/wms/', 'layerName': 'intern:nl:klimaatatlas:drooglegging', 'information': '', 'styles': 'YlGnBu_r:0:3', 'height': 256, 'width': 256, 'zindex': 10, 'srs': 'EPSG:3857', 'format': 'image/png', 'transparent': True, 'opacity': 100, 'attribution': 'Copyright, Lizard 2017', 'active': False, 'dynamicScalable': False, 'legend': {'name': 'Drooglegging', 'type': 'categorical', 'steps': [{'label': '4 meter', 'style': 'point', 'color': '#FAFAD4', 'symbol': ''}, {'label': '2 meter', 'style': 'point', 'color': '#8BBB9D', 'symbol': ''}, {'label': '0', 'style': 'point', 'color': '#091E5B', 'symbol': ''}]}, 'has_getfeatureinfo': False, 'getfeatureinfo_fields': [], 'getfeatureinfo_url': '', 'layername': 'drooglegging', 'slug': 'intern:nl:klimaatatlas:drooglegging'}}
+	configuration:				{'name': 'Drooglegging', 'organisation': 'fef9e6e0-0c30-4e8c-a8cd-4f9d8e65922a', 'description': '', 'supplier': 'chris.kerklaan', 'supplier_code': 'intern_nl_klimaatatlas_drooglegging', 'aggregation_type': 2, 'options': {}, 'acces_modifier': 0, 'rescalable': False, 'observation_type': '-', 'datasets': ['twn_klimaatatlas'], 'slug': 'twn:drooglegging'}
+	skip:				False
+	onderwerp:				Drooglegging
+create store succes 201
+
+ Succes:
+	Bodem:				None
+	Drooglegging:				None
+
+ Failures:

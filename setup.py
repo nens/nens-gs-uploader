@@ -2,7 +2,9 @@ from setuptools import setup
 
 version = "0.2.dev0"
 
-long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
+long_description = "\n\n".join(
+    [open("README.rst").read(), open("CHANGES.rst").read()]
+)
 
 install_requires = [
     "configparser==3.7.4",
@@ -13,7 +15,13 @@ install_requires = [
     "psycopg2==2.8.4",
 ]
 
-tests_require = ["pytest", "mock", "pytest-cov", "pytest-flakes", "pytest-black"]
+tests_require = [
+    "pytest",
+    "mock",
+    "pytest-cov",
+    "pytest-flakes",
+    "pytest-black",
+]
 
 setup(
     name="nens-gs-uploader",

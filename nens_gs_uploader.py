@@ -4,9 +4,24 @@ Created on Wed Jul 24 15:39:13 2019
 
 @author: chris.kerklaan - N&S
 
+Dit script kan uploaden naar de Geoservers van N&S.
+Er zijn meerdere opties:
+    1. Uploaden vanaf een vector bestand op een schijf
+    2. Uploaden vanaf een postgres tabel 
+    3. Overzetten van de ene geoserver naar de andere -- moet nog ontwikkeld worden.
+
+
+Je kan ook WMS lagen hiermee uploaden naar Lizard.
+
 TODOs:
-    1. Check slds werken nog niet goed
+    0. BELANGRIJK: TEST SCHRIJVEN VOOR BASIS FUNCTIONALITEITEN
+    3. Output verbeteren
+    5. Warning voor het aantal kolommen
+
     
+NOTES:
+    1. Geoserver 9 is ouder dan de rest, hierdoor werkt upload naar geoserver 9 niet met styling
+
 """
 # system imports
 import os
@@ -23,12 +38,14 @@ import argparse
 from glob import glob
 
 # Test arguments
-inifile = "C:/Users/chris.kerklaan/Documents/Github/nens_gs_uploader/nens_gs_uploader/data/nens_gs_uploader.ini"
-sys.path.append("C:/Users/chris.kerklaan/Documents/Github/nens_gs_uploader")
+inifile = (
+    "C:/Users/chris.kerklaan/tools/instellingen/flevoland/nens_gs_uploader.ini"
+)
+sys.path.append("C:/Users/chris.kerklaan/tools")
+del sys.path[0]
 
 # Local imports
 from nens_gs_uploader.postgis import (
-    REST,
     PG_DATABASE,
     copy2pg_database,
     add_metadata_pgdatabase,
@@ -41,15 +58,10 @@ from nens_gs_uploader.project import (
     print_dictionary,
 )
 from nens_gs_uploader.vector import vector_to_geom, wrap_shape
-
-from nens_gs_uploader.wrap import wrap_geoserver
+from nens_gs_uploader.wrap import wrap_geoserver, REST
 from nens_gs_uploader.sld import wrap_sld
-from nens_gs_uploader.sld import replace_sld_field_based_on_shape
 from nens_gs_uploader.wmslayers import wmslayers
-
-# Globals
-DRIVER_OGR_SHP = ogr.GetDriverByName("ESRI Shapefile")
-DRIVER_OGR_MEM = ogr.GetDriverByName("Memory")
+from nens_gs_uploader.postgis import _clear_connections_database
 
 # Exceptions
 ogr.UseExceptions()
@@ -68,12 +80,18 @@ for handler in logging.root.handlers[:]:
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
+    parser.add_argument(
+        "inifile", metavar="INIFILE", help="Settings voor inifile."
+    )
     return parser
 
 
 def has_numbers(string):
     return any(char.isdigit() for char in string)
+
+
+def lower_string(string):
+    return string.lower().replace(" ", "").replace("-", "_")
 
 
 def get_subject_from_name(name, organisation):
@@ -91,7 +109,9 @@ def get_subject_from_name(name, organisation):
 
 
 def get_subject_from_path(path, organisation):
-    return get_subject_from_name(os.path.basename(path).split(".")[0], organisation)
+    return get_subject_from_name(
+        os.path.basename(path).split(".")[0], organisation
+    )
 
 
 def get_paths_and_subjects(setting, source):
@@ -99,11 +119,12 @@ def get_paths_and_subjects(setting, source):
         in_paths = glob(setting.directory + "/*.shp")
         in_paths = in_paths + glob(setting.directory + "/*.gpkg")
         subjects = [
-            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
+            get_subject_from_path(in_path, setting.organisatie)
+            for in_path in in_paths
         ]
 
     elif source == "postgis":
-        in_paths = setting.config.sections()[5:]
+        in_paths = setting.config.sections()[6:]
         subjects = setting.get_postgis_subjects()
     else:
         print("choose source")
@@ -111,9 +132,9 @@ def get_paths_and_subjects(setting, source):
     if setting.wms_layer_only:
         in_paths = glob(setting.directory + "/*.json")
         subjects = [
-            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
+            get_subject_from_path(in_path, setting.organisatie)
+            for in_path in in_paths
         ]
-
     return in_paths, subjects
 
 
@@ -133,6 +154,9 @@ class settings_object(object):
 
     def __init__(self, ini_file=None, postgis=True, folder=True):
         if ini_file is not None:
+            if not os.path.exists(inifile):
+                raise ValueError("path does not exist")
+
             config = RawConfigParser()
             config.read(ini_file)
             self.ini = ini_file
@@ -189,30 +213,36 @@ def add_output_settings(setting, onderwerp, in_path):
     conform https://sites.google.com/nelen-schuurmans.nl/handleiding-klimaatatlas/data-protocol
     """
 
+    onderwerp = lower_string(onderwerp)
+
     # layer names, workspace names en server names
     if "PRODUCTIE" in setting.server_naam:
         layer_name = "{}_{}_{}".format(
             setting.bo_nummer, setting.organisatie, onderwerp
         )
         workspace_name = setting.organisatie + "_" + setting.product_naam
-    elif "PROJECTEN" in setting.server_naam or "STAGING" in setting.server_naam:
+    elif (
+        "PROJECTEN" in setting.server_naam or "STAGING" in setting.server_naam
+    ):
         layer_name = "{}_{}_{}_{}".format(
             setting.project_nummer.lower(),
             setting.organisatie,
             onderwerp,
             setting.einddatum,
         )
-        workspace_name = "p_{}_{}".format(setting.organisatie, setting.product_naam)
+        workspace_name = "p_{}_{}".format(
+            setting.organisatie, setting.product_naam
+        )
 
     else:
         raise ValueError("servernaam fout")
 
     store_name = "{}_{}".format(
-        setting.project_nummer.lower(), PG_DATABASE[setting.server_naam]["database"]
+        setting.project_nummer.lower(),
+        PG_DATABASE[setting.server_naam]["database"],
     )
 
     # abstracts and titles
-
     if setting.product_naam == "klimaatatlas":
 
         abstract_data = """
@@ -242,6 +272,16 @@ def add_output_settings(setting, onderwerp, in_path):
         database_name = None
         schema_name = "public"
 
+    elif setting.product_naam == "catalogus":
+        abstract_data = """ 
+        De laag {omschrijving} komt van {bron}. Voor meer informatie over 
+        deze laag, ga naar de klimaatatlas www.{bron}.klimaatatlas.net. 
+        """.format(
+            omschrijving=onderwerp.lower(), bron=setting.organisatie.lower()
+        )
+        database_name = None
+        schema_name = "public"
+
     elif setting.product_naam == "flooding":
         """flooding has no restrictions"""
 
@@ -257,6 +297,17 @@ def add_output_settings(setting, onderwerp, in_path):
 
     # title
     title_data = layer_name
+
+    # slug
+    slug = ":".join([workspace_name, layer_name][:50])
+
+    # wms
+    wms_url = REST[setting.server_naam].replace(
+        "rest", "{}/wms".format(workspace_name)
+    )
+
+    # lizard wms acces
+    access = 0
 
     # Source inputs
     if setting.use_postgis and not os.path.isfile(in_path):
@@ -276,7 +327,9 @@ def add_output_settings(setting, onderwerp, in_path):
 
         setting.in_datasource = in_path
         setting.in_layer = None
-        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1], ".sld")
+        setting.in_sld_path = in_path.replace(
+            os.path.splitext(in_path)[1], ".sld"
+        )
         setting.skip = False
 
         # Extra directory setting
@@ -314,24 +367,51 @@ def add_output_settings(setting, onderwerp, in_path):
 
     # Add wms layers
     if setting.wms_layer_only or not setting.skip_lizard_wms_layer:
+
         setting.set_values("lizard_wmslayers")
-        json_path = in_path.replace(os.path.splitext(in_path)[1], ".json")
-        atlas_dict = json.load(open(json_path))["atlas"]
+        setting.wmslayer = wmslayers()
 
-        wmslayer = wmslayers()
-        wmslayer.atlas2wms(
-            atlas_dict,
-            setting.organisation_uuid,
-            setting.dataset,
-            setting.eigen_naam,
-            setting.organisatie,
-            setting.product_naam,
-        )
+        if setting.atlasjson2wms:
+            json_path = in_path.replace(os.path.splitext(in_path)[1], ".json")
+            atlas_dict = json.load(open(json_path))["atlas"]
 
-        setting.wmslayer = wmslayer
-        setting.wmsslug = atlas_dict["slug"]
-        wms_url = atlas_dict["url"].replace(atlas_dict["workspace"] + "/wms", "/rest/")
-        setting.wmsserver = wms_url
+            setting.wmslayer.atlas2wms(
+                atlas_dict,
+                setting.organisation_uuid,
+                setting.dataset,
+                setting.eigen_naam,
+                setting.organisatie,
+                setting.product_naam,
+            )
+
+            setting.slug = atlas_dict["slug"]
+            wms_url = atlas_dict["url"].replace(
+                atlas_dict["workspace"] + "/wms", "/rest/"
+            )
+            setting.wmsserver = wms_url
+            title_data = atlas_dict["name"]
+
+        else:
+
+            setting.wmslayer.configuration = {
+                "name": title_data,
+                "description": abstract_data,
+                "slug": slug,
+                "tiled": True,
+                "wms_url": wms_url,
+                "access_modifier": access,
+                "supplier": setting.eigen_naam,
+                "options": {"transparent": "true"},
+                "shared_with": [],
+                "datasets": [setting.dataset],
+                "organisation": setting.organisation_uuid,
+                "download_url": setting.wmslayer.get_download_url(
+                    wms_url, slug
+                ),
+                "legend_url": setting.wmslayer.get_legend_url(wms_url, slug),
+                "get_feature_info_url": wms_url,
+                "get_feature_info": True,
+            }
 
     # Overwrite all
     if setting.overwrite_all:
@@ -350,6 +430,8 @@ def add_output_settings(setting, onderwerp, in_path):
         setting.skip_lizard_wms_layer = False
 
     # Outputs geoserver
+    setting.slug = slug
+    setting.wms_url = wms_url
     setting.workspace_name = workspace_name
     setting.store_name = store_name
     setting.layer_name = layer_name
@@ -392,6 +474,7 @@ def batch_upload(inifile):
 
     else:
         print("use either use_postgis or use_batch")
+
     print_list(subjects, "Subjects")
     print_list(in_paths, "Paths")
 
@@ -406,6 +489,9 @@ def batch_upload(inifile):
             setting.server = wrap_geoserver(setting.server_naam)
             print_dictionary(setting.__dict__, "Layer settings")
 
+            pg_details = PG_DATABASE[setting.server_naam]
+            _clear_connections_database(pg_details)
+
             try:
                 succes[setting.subject] = upload(setting)
 
@@ -413,8 +499,11 @@ def batch_upload(inifile):
                 print(e)
                 failures[setting.subject] = e
 
+            finally:
+                _clear_connections_database(pg_details)
+
             log_time("info", "sleeping to decrease load on server....")
-            sleep(1)
+            sleep(2)
         else:
             log_time("info", "Skipping", subject, "l")
 
@@ -424,17 +513,21 @@ def batch_upload(inifile):
 
 def upload(setting):
     log_time("info", setting.layer_name, "0. starting.....")
-    wms = REST[setting.server_naam].replace(
-        "rest", "{}/wms".format(setting.workspace_name)
-    )
-    slug = "{}:{}".format(setting.workspace_name, setting.layer_name)
+
+    if isinstance(setting.in_datasource, dict):
+        _clear_connections_database(setting.in_datasource)
 
     if not (setting.skip_gs_upload and setting.skip_pg_upload):
         vector = wrap_shape(setting.in_datasource, setting.in_layer)
 
     if not setting.skip_correction:
         log_time("info", setting.layer_name, "1. vector corrections")
-        vector.correct(vector.layer, setting.layer_name, setting.epsg)
+        vector.correct(
+            vector.layer,
+            setting.layer_name,
+            setting.epsg,
+            driver="ESRI Shapefile",
+        )
         setting.layer_name = vector.layer_name
 
     if not setting.skip_mask:
@@ -450,13 +543,31 @@ def upload(setting):
         if vector.ds[0][0] == None:
             log_time("error", setting.layer_name, "Feature is none")
 
-    log_time("info", setting.layer_name, "2. Upload shape to pg database.")
+    if not setting.skip_delete_excess_field_names:
+        vector = wrap_shape(vector.ds)
+        field_names = vector.get_all_field_names()
+        field_names = [f.lower() for f in field_names]
+
+        sld = wrap_sld(setting.in_sld_path, _type="path")
+        sld.lower_all_property_names()
+        sld_fields = sld.get_all_property_names()
+        for field_name in field_names:
+            if field_name not in sld_fields:
+                vector.delete_field(field_name)
+                continue
+            else:
+                log_time("info", f"Keeping '{field_name}' field in vector")
+
     if not setting.skip_pg_upload:
+        log_time("info", setting.layer_name, "2. Upload shape to pg database.")
+
         pg_details = PG_DATABASE[setting.server_naam]
+        _clear_connections_database(pg_details)
+
         if setting.database_name is not None:
             pg_details["database"] = setting.database_name
-        pg_database = wrap_shape(pg_details)
 
+        pg_database = wrap_shape(pg_details)
         # set metadata
         if not setting.product_naam == "flooding" and setting.set_metadata:
             add_metadata_pgdatabase(setting, pg_database)
@@ -466,11 +577,18 @@ def upload(setting):
 
         if not pg_layer_present or setting.overwrite_postgres:
             copy2pg_database(
-                pg_database.ds, vector.layer, setting.layer_name, setting.schema_name
+                pg_database.ds,
+                vector.ds,
+                vector.layer,
+                setting.layer_name,
+                setting.schema_name,
             )
 
         else:
             log_time("info", setting.layer_name, "Layer already in database.")
+
+        pg_database.get_layer(setting.layer_name.lower())
+        pg_database.lower_all_field_names()
 
     if not setting.skip_gs_upload:
         log_time("info", setting.layer_name, "3. Create workspace.")
@@ -478,6 +596,7 @@ def upload(setting):
         server.create_workspace(setting.workspace_name)
 
         log_time("info", setting.layer_name, "4. Create store.")
+        pg_details = PG_DATABASE[setting.server_naam]
         server.create_postgis_datastore(
             setting.store_name, setting.workspace_name, pg_details
         )
@@ -488,38 +607,37 @@ def upload(setting):
             setting.workspace_name,
             setting.overwrite_feature,
             setting.epsg,
+            reload=True,
         )
 
         if setting.use_existing_geoserver_sld:
             log_time("info", setting.layer_name, "6-9. Setting existing sld.")
             server.set_sld_for_layer(
-                workspace_name=None, style_name=setting.existing_sld, use_custom=True
+                workspace_name=None,
+                style_name=setting.existing_sld,
+                use_custom=True,
             )
         else:
-            log_time("info", setting.layer_name, "6. Load Style Layer Descriptor.")
+            log_time(
+                "info", setting.layer_name, "6. Load Style Layer Descriptor."
+            )
 
             sld = wrap_sld(setting.in_sld_path, _type="path")
 
-            if setting.skip_sld_check:
+            if not setting.skip_sld_check:
                 log_time("info", setting.layer_name, "7. Check sld.")
-                pg_database.get_layer(setting.layer_name)
 
-                # lower all field names if necessary
-                print("Lowering")
-                pg_database.lower_all_field_names()
+                # lower all and cut field names to esri shape standards
                 sld.lower_all_property_names()
-
-                if sld._type() == "category":
-                    for sld_field_name in sld.get_all_property_names():
-                        if not sld_field_name in pg_database.get_all_field_names():
-                            replace_sld_field_based_on_shape(
-                                pg_database, sld, sld_field_name
-                            )
+                sld.cut_len_all_property_names(_len=10)
 
             log_time("info", setting.layer_name, "8. Upload sld.")
             style_name = setting.layer_name + "_style"
             server.upload_sld(
-                style_name, setting.workspace_name, sld.get_xml(), setting.overwrite_sld
+                style_name,
+                setting.workspace_name,
+                sld.get_xml(),
+                setting.overwrite_sld,
             )
 
             log_time("info", "9. Connect sld to layer.")
@@ -537,17 +655,19 @@ def upload(setting):
         log_time("info", setting.layer_name, "12. Add wms layer.")
         if not setting.skip_gs_upload:
             gs_wms_server = setting.server
-            gs_wms_server.get_layer(slug)
-            setting.wmslayer.configuration["wms_url"] = wms
-            download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
-                wms.replace("wms", "wfs"), slug
+            gs_wms_server.get_layer(setting.slug)
+            setting.wmslayer.configuration["wms_url"] = setting.wms_url
+            download_url = setting.wmslayer.get_download_url(
+                setting.wms_url, setting.slug
             )
             setting.wmslayer.configuration["download_url"] = download_url
+            setting.wmslayer.configuration["slug"] = setting.slug
+
         else:
             gs_wms_server = wrap_geoserver(setting.wmsserver)
             gs_wms_server.get_layer(setting.wmsslug)
 
-        latlon_bbox = gs_wms_server.latlon_bbox
+        latlon_bbox = gs_wms_server.layer_latlon_bbox
         setting.wmslayer.configuration["spatial_bounds"] = {
             "south": latlon_bbox[2],
             "west": latlon_bbox[0],
@@ -558,8 +678,7 @@ def upload(setting):
         setting.wmslayer.create(setting.wmslayer.configuration, overwrite=True)
 
     log_time("info", setting.layer_name, "13. Returning wms, slug")
-
-    return wms, slug
+    return setting.wms_url, setting.slug
 
 
 if __name__ == "__main__":

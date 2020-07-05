@@ -32,7 +32,13 @@ project_lizard = {
     "username": "",
     "password": "",
 }
-staging = {"host": "", "port": "", "database": "", "username": "", "password": ""}
+staging = {
+    "host": "",
+    "port": "",
+    "database": "",
+    "username": "",
+    "password": "",
+}
 production_klimaatatlas_v1 = {
     "host": "",
     "port": "",

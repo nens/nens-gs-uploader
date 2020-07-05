@@ -23,7 +23,12 @@ import psycopg2
 
 class connect2pg:
     def __init__(
-        self, dbname, port="5432", host="localhost", user="postgres", password="nens"
+        self,
+        dbname,
+        port="5432",
+        host="localhost",
+        user="postgres",
+        password="nens",
     ):
         self.dbname = dbname
         self.host = host
@@ -43,9 +48,9 @@ class connect2pg:
         return conn
 
     def ogr_connection(self, connection="string", read=1):
-        ogr_conn = ("PG:host={} port={} user='{}'" "password='{}' dbname='{}'").format(
-            self.host, self.port, self.user, self.password, self.dbname
-        )
+        ogr_conn = (
+            "PG:host={} port={} user='{}'" "password='{}' dbname='{}'"
+        ).format(self.host, self.port, self.user, self.password, self.dbname)
 
         if connection is True:
             try:

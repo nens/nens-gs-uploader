@@ -129,7 +129,10 @@ class Catalog:
         """
         rest_url = config_object.href
         params = {"purge": purge, "recurse": recurse}
-        headers = {"Content-type": "application/xml", "Accept": "application/xml"}
+        headers = {
+            "Content-type": "application/xml",
+            "Accept": "application/xml",
+        }
         r = self.session.delete(rest_url, params=params, headers=headers)
         if r.status_code == requests.codes.ok:
             return r.text
@@ -159,7 +162,9 @@ class Catalog:
                     "Tried to make a GET request to {}"
                     + " but got a {} status code: \n{}"
                 )
-                raise FailedRequestError(msg.format(rest_url, r.status_code, text))
+                raise FailedRequestError(
+                    msg.format(rest_url, r.status_code, text)
+                )
         try:
             return XML(text)
         except (ExpatError, SyntaxError) as e:
@@ -200,13 +205,18 @@ class Catalog:
         message = obj.message()
         save_method = obj.save_method
         LOGGER.debug("{} {}".format(save_method, rest_url))
-        methods = {settings.POST: self.session.post, settings.PUT: self.session.put}
+        methods = {
+            settings.POST: self.session.post,
+            settings.PUT: self.session.put,
+        }
         headers = {"Content-type": content_type, "Accept": content_type}
         r = methods[save_method](rest_url, data=message, headers=headers)
         self._cache.clear()
         if 400 <= r.status_code < 600:
             raise FailedRequestError(
-                "Error code ({}) from GeoServer: {}".format(r.status_code, r.text)
+                "Error code ({}) from GeoServer: {}".format(
+                    r.status_code, r.text
+                )
             )
         return r
 
@@ -340,7 +350,10 @@ class Catalog:
             params["update"] = "overwrite"
         if charset is not None:
             params["charset"] = charset
-        headers = {"Content-Type": "application/zip", "Accept": "application/xml"}
+        headers = {
+            "Content-Type": "application/zip",
+            "Accept": "application/xml",
+        }
         upload_url = urljoin(
             self.service_url,
             "workspaces/{}/datastores/{}/file.shp".format(workspace, store),
@@ -385,7 +398,10 @@ class Catalog:
             "workspaces/{}/datastores/{}/file.shp".format(workspace, name),
         )
         # PUT /workspaces/<ws>/datastores/<ds>/file.shp
-        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
+        headers = {
+            "Content-type": "application/zip",
+            "Accept": "application/xml",
+        }
         if isinstance(data, dict):
             LOGGER.debug("Data is NOT a zipfile")
             archive = prepare_upload_bundle(name, data)
@@ -394,7 +410,9 @@ class Catalog:
             archive = data
         message = open(archive, "rb")
         try:
-            r = self.session.put(ds_url, data=message, headers=headers, params=params)
+            r = self.session.put(
+                ds_url, data=message, headers=headers, params=params
+            )
             self._cache.clear()
             if r.status_code != 201:
                 raise UploadError(r.text)
@@ -403,7 +421,13 @@ class Catalog:
             os.unlink(archive)
 
     def create_imagemosaic(
-        self, name, data, configure=None, workspace=None, overwrite=False, charset=None
+        self,
+        name,
+        data,
+        configure=None,
+        workspace=None,
+        overwrite=False,
+        charset=None,
     ):
         if not overwrite:
             try:
@@ -426,16 +450,23 @@ class Catalog:
             params["configure"] = "none"
         cs_url = urljoin(
             self.service_url,
-            "workspaces/{}/coveragestores/{}/file.imagemosaic".format(workspace, name),
+            "workspaces/{}/coveragestores/{}/file.imagemosaic".format(
+                workspace, name
+            ),
         )
         # PUT /workspaces/<ws>/coveragestores/<name>/file.imagemosaic?configure=none
-        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
+        headers = {
+            "Content-type": "application/zip",
+            "Accept": "application/xml",
+        }
         if isinstance(data, str):
             message = open(data, "rb")
         else:
             message = data
         try:
-            r = self.session.put(cs_url, data=message, headers=headers, params=params)
+            r = self.session.put(
+                cs_url, data=message, headers=headers, params=params
+            )
             self._cache.clear()
             if r.status_code != 201:
                 raise UploadError(r.text)
@@ -443,7 +474,9 @@ class Catalog:
             if hasattr(message, "close"):
                 message.close()
 
-    def create_coveragestore(self, name, data, workspace=None, overwrite=False):
+    def create_coveragestore(
+        self, name, data, workspace=None, overwrite=False
+    ):
         self._create_coveragestore(name, data, workspace, overwrite)
 
     def create_coveragestore_external_geotiff(
@@ -502,7 +535,9 @@ class Catalog:
         params = {"configure": "first", "coverageName": name}
 
         try:
-            r = self.session.put(cs_url, data=message, headers=headers, params=params)
+            r = self.session.put(
+                cs_url, data=message, headers=headers, params=params
+            )
             self._cache.clear()
             if r.status_code != 201:
                 raise UploadError(r.text)
@@ -525,7 +560,9 @@ class Catalog:
         )
         # POST /workspaces/<ws>/coveragestores/<name>/external.imagemosaic
         headers = {"Content-type": "text/plain", "Accept": "application/xml"}
-        r = self.session.post(cs_url, data=data, headers=headers, params=params)
+        r = self.session.post(
+            cs_url, data=data, headers=headers, params=params
+        )
         self._cache.clear()
         if r.status_code != 202:
             raise UploadError(r.text)
@@ -543,10 +580,15 @@ class Catalog:
             ),
         )
         # POST /workspaces/<ws>/coveragestores/<name>/file.imagemosaic
-        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
+        headers = {
+            "Content-type": "application/zip",
+            "Accept": "application/xml",
+        }
         message = open(data, "rb")
         try:
-            r = self.session.post(cs_url, data=message, headers=headers, params=params)
+            r = self.session.post(
+                cs_url, data=message, headers=headers, params=params
+            )
             self._cache.clear()
             if r.status_code != 202:
                 raise UploadError(r.text)
@@ -566,7 +608,10 @@ class Catalog:
             ),
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages.json
-        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+        }
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         coverages = json.loads(r.text, object_hook=_decode_dict)
@@ -584,13 +629,18 @@ class Catalog:
             ),
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index.json
-        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+        }
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         schema = json.loads(r.text, object_hook=_decode_dict)
         return schema
 
-    def mosaic_granules(self, coverage, store, filter_=None, limit=None, offset=None):
+    def mosaic_granules(
+        self, coverage, store, filter_=None, limit=None, offset=None
+    ):
         """
         Print granules of an existing imagemosaic
         """
@@ -603,10 +653,14 @@ class Catalog:
             params["offset"] = offset
         p = "workspaces/{}/coveragestores/{}/coverages/{}/index/granules.json"
         cs_url = urljoin(
-            self.service_url, p.format(store.workspace.name, store.name, coverage)
+            self.service_url,
+            p.format(store.workspace.name, store.name, coverage),
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index/granules.json
-        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+        }
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         granules = json.loads(r.text, object_hook=_decode_dict)
@@ -617,13 +671,19 @@ class Catalog:
         Deletes a granule of an existing imagemosaic
         """
         params = dict()
-        p = "workspaces/{}/coveragestores/{}/coverages/{}" + "/index/granule/{}.json"
+        p = (
+            "workspaces/{}/coveragestores/{}/coverages/{}"
+            + "/index/granule/{}.json"
+        )
         cs_url = urljoin(
             self.service_url,
             p.format(store.workspace, store.name, coverage, granule_id),
         )
         # DELETE /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index/granules/<granule_id>.json
-        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-type": "application/json",
+            "Accept": "application/json",
+        }
         r = self.session.delete(cs_url, headers=headers, params=params)
         self._cache.clear()
         if r.status_code != 200:
@@ -657,7 +717,10 @@ class Catalog:
             feature_type.native_bbox = native_bbox
         feature_type.enabled = True
         feature_type.title = name
-        headers = {"Content-type": "application/xml", "Accept": "application/xml"}
+        headers = {
+            "Content-type": "application/xml",
+            "Accept": "application/xml",
+        }
         params = dict()
         resource_url = store.resource_url
         if jdbc_virtual_table is not None:
@@ -671,7 +734,10 @@ class Catalog:
             )
         # What is the use of this request?
         r = self.session.post(
-            resource_url, data=feature_type.message(), headers=headers, params=params
+            resource_url,
+            data=feature_type.message(),
+            headers=headers,
+            params=params,
         )
         if r.status_code < 200 or r.status_code > 299:
             raise UploadError(r.text)
@@ -751,7 +817,8 @@ class Catalog:
         layers_url = urljoin(self.service_url, "layers.xml")
         description = self.get_xml(layers_url)
         layers = [
-            Layer(self, l.find("name").text) for l in description.findall("layer")
+            Layer(self, l.find("name").text)
+            for l in description.findall("layer")
         ]
         if resource is not None:
             layers = [l for l in layers if l.resource.href == resource.href]
@@ -794,7 +861,9 @@ class Catalog:
             msg = "LayerGroup named {} already exists!"
             raise ConflictingDataError(msg.format(name))
         else:
-            return UnsavedLayerGroup(self, name, layers, styles, bounds, workspace)
+            return UnsavedLayerGroup(
+                self, name, layers, styles, bounds, workspace
+            )
 
     def get_style(self, name, workspace=None):
         """
@@ -819,7 +888,9 @@ class Catalog:
             dom = self.get_xml(style_workspace_url)
         except FailedRequestError:
             return None
-        rest_parts = style_workspace_url.replace(self.service_url, "").split("/")
+        rest_parts = style_workspace_url.replace(self.service_url, "").split(
+            "/"
+        )
         # check for /workspaces/<ws>/styles/<stylename>
         workspace = None
         if "workspaces" in rest_parts:
@@ -832,7 +903,10 @@ class Catalog:
             styles_xml = "workspaces/{0}/styles.xml".format(_name(workspace))
         styles_url = urljoin(self.service_url, styles_xml)
         description = self.get_xml(styles_url)
-        return [Style(self, s.find("name").text) for s in description.findall("style")]
+        return [
+            Style(self, s.find("name").text)
+            for s in description.findall("style")
+        ]
 
     def create_style(
         self,
@@ -848,14 +922,23 @@ class Catalog:
             msg = "There is already a style named {}".format(name)
             raise ConflictingDataError(msg)
         if not overwrite or style is None:
-            headers = {"Content-type": "application/xml", "Accept": "application/xml"}
-            xml = "<style><name>{0}</name><filename>{0}.sld" + "</filename></style>"
+            headers = {
+                "Content-type": "application/xml",
+                "Accept": "application/xml",
+            }
+            xml = (
+                "<style><name>{0}</name><filename>{0}.sld"
+                + "</filename></style>"
+            )
             xml = xml.format(name)
             style = Style(self, name, workspace, style_format)
             r = self.session.post(style.create_href, data=xml, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
                 raise UploadError(r.text)
-        headers = {"Content-type": style.content_type, "Accept": "application/xml"}
+        headers = {
+            "Content-type": style.content_type,
+            "Accept": "application/xml",
+        }
         body_href = style.body_href
         if raw:
             body_href += "?raw=true"
@@ -874,7 +957,9 @@ class Catalog:
         r = self.session.post(workspace_url, data=xml, headers=headers)
         assert (
             200 <= r.status_code < 300
-        ), "Tried to create workspace but got {}: {}".format(r.status_code, r.text)
+        ), "Tried to create workspace but got {}: {}".format(
+            r.status_code, r.text
+        )
         self._cache.pop(urljoin(self.service_url, "workspaces.xml"), None)
         return self.get_workspace(name)
 
@@ -907,12 +992,18 @@ class Catalog:
         workspace = self.get_workspace(name)
         if workspace is not None:
             headers = {"Content-Type": "application/xml"}
-            default_workspace_url = urljoin(self.service_url, "workspaces/default.xml")
+            default_workspace_url = urljoin(
+                self.service_url, "workspaces/default.xml"
+            )
             msg = "<workspace><name>{}</name></workspace>".format(name)
-            r = self.session.put(default_workspace_url, data=msg, headers=headers)
+            r = self.session.put(
+                default_workspace_url, data=msg, headers=headers
+            )
             assert (
                 200 <= r.status_code < 300
-            ), "Error setting default workspace: {}: {}".format(r.status_code, r.text)
+            ), "Error setting default workspace: {}: {}".format(
+                r.status_code, r.text
+            )
             self._cache.pop(default_workspace_url, None)
             self._cache.pop("{}/workspaces.xml".format(self.service_url), None)
         else:
