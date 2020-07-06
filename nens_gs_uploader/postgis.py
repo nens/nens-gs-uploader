@@ -83,9 +83,7 @@ def connect2pg_database(database, con_type="ogr"):
         return connection
 
 
-def copy2pg_database(
-    ds, ds_layer, layer, layer_name, schema="public", overwrite="YES"
-):
+def copy2pg_database(ds, ds_layer, layer, layer_name, schema="public", overwrite="YES"):
 
     # ds, layer = check_ogr_columns(ds_layer, layer)
 

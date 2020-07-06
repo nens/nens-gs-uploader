@@ -75,10 +75,7 @@ class wrap_atlas:
         if write:
             with open(name + ".json", "w", encoding="utf-8") as f:
                 json.dump(
-                    json.loads(poly.ExportToJson()),
-                    f,
-                    ensure_ascii=False,
-                    indent=4,
+                    json.loads(poly.ExportToJson()), f, ensure_ascii=False, indent=4
                 )
         return poly
 

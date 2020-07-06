@@ -70,9 +70,7 @@ class wrap_geoserver:
                 self.workspace_names.append(workspace._name)
                 self.workspaces.append(workspace)
 
-            self.styles = styles + [
-                style for style in self.catalog.get_styles()
-            ]
+            self.styles = styles + [style for style in self.catalog.get_styles()]
             self.style_names = [style.name for style in self.styles]
 
     def unpack(self, workspace_name, store_type="datastore"):
@@ -153,9 +151,7 @@ class wrap_geoserver:
     def create_postgis_datastore(self, store_name, workspace_name, pg_data):
 
         try:
-            self.store = self.catalog.get_store(
-                store_name, self.workspace_name
-            )
+            self.store = self.catalog.get_store(store_name, self.workspace_name)
             print("store within workspace exists, using existing store")
 
         except Exception as e:
@@ -173,18 +169,11 @@ class wrap_geoserver:
             )
 
             self.save(ds)
-            self.store = self.catalog.get_store(
-                store_name, self.workspace_name
-            )
+            self.store = self.catalog.get_store(store_name, self.workspace_name)
             self.store_name = store_name
 
     def publish_layer(
-        self,
-        layer_name,
-        workspace_name,
-        overwrite=False,
-        epsg="3857",
-        reload=False,
+        self, layer_name, workspace_name, overwrite=False, epsg="3857", reload=False,
     ):
 
         layer_exists = layer_name in self.layer_names
@@ -224,9 +213,7 @@ class wrap_geoserver:
 
         self.layer_name = layer_name
 
-    def publish_layergroup(
-        self, name, layers, styles=(), bounds=None, workspace=None
-    ):
+    def publish_layergroup(self, name, layers, styles=(), bounds=None, workspace=None):
         layer_group = self.catalog.create_layergroup(
             name, layers, styles, bounds, workspace
         )
@@ -247,9 +234,7 @@ class wrap_geoserver:
     def upload_shapefile(self, layer_name, shapefile_path):
         path = shapefile_path.split(".shp")[0]
         shapefile = shapefile_and_friends(path)
-        ft = self.catalog.create_featurestore(
-            layer_name, shapefile, self.workspace
-        )
+        ft = self.catalog.create_featurestore(layer_name, shapefile, self.workspace)
         self.save(ft)
 
     def upload_sld(self, sld_name, workspace_name, sld, overwrite=True):
@@ -264,18 +249,14 @@ class wrap_geoserver:
 
         if not style_exists:
             try:
-                self.catalog.create_style(
-                    sld_name, sld, False, workspace_name, "sld11"
-                )
+                self.catalog.create_style(sld_name, sld, False, workspace_name, "sld11")
             except Exception as e:
                 print(e)
 
                 style = self.catalog.get_style(sld_name, workspace_name)
                 self.delete(style)
                 self.reload()
-                self.catalog.create_style(
-                    sld_name, sld, False, workspace_name, "sld10"
-                )
+                self.catalog.create_style(sld_name, sld, False, workspace_name, "sld10")
             self.style_name = sld_name
 
         else:
@@ -283,9 +264,7 @@ class wrap_geoserver:
                 print("Style already exists, using current style")
                 self.style_name = sld_name
 
-    def set_sld_for_layer(
-        self, workspace_name=None, style_name=None, use_custom=False
-    ):
+    def set_sld_for_layer(self, workspace_name=None, style_name=None, use_custom=False):
         if not use_custom:
             workspace_name = self.workspace_name
             style_name = self.style_name

@@ -99,9 +99,7 @@ class rasterstore(object):
                     return result
 
             elif search == "organisation":
-                results = self.organisation_search(
-                    page, organisation, page_size=1000
-                )
+                results = self.organisation_search(page, organisation, page_size=1000)
                 result = self.match_results_to_slug(results, slug)
                 if result is not None:
                     return result
@@ -126,9 +124,7 @@ class rasterstore(object):
                 search_terms_new.append(term.upper())
                 search_terms_new.append(term.lower())
 
-            search_terms = list(
-                set(search_terms_new + [slug] + slug.split(":"))
-            )
+            search_terms = list(set(search_terms_new + [slug] + slug.split(":")))
             # print("search terms..", search_terms)
 
             for search_term in list(set(search_terms)):
@@ -223,9 +219,7 @@ class rasterstore(object):
         print(path)
         url = self.raster_url + self.raster_uuid + "/data/"
 
-        r = post(
-            url=url, files={"file": open(path, "rb")}, headers=self.get_headers
-        )
+        r = post(url=url, files={"file": open(path, "rb")}, headers=self.get_headers)
 
         if not r.status_code == codes.ok:
             print("post data failure", r.status_code)
@@ -248,9 +242,7 @@ class rasterstore(object):
         else:
             print("put data succes", r.status_code)
 
-    def atlas2store(
-        self, atlas_json, supplier, rescalable=False, acces_modifier=0
-    ):
+    def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
         raster = atlas_json["rasterstore"]
         atlas = atlas_json["atlas"]
 

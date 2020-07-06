@@ -37,11 +37,7 @@ class SlugNotFound(Exception):
 
 class rasterstore(object):
     def __init__(
-        self,
-        uuid=None,
-        username=USERNAME,
-        password=PASSWORD,
-        update_slugs=False,
+        self, uuid=None, username=USERNAME, password=PASSWORD, update_slugs=False
     ):
 
         self.username = username
@@ -50,9 +46,7 @@ class rasterstore(object):
         self.organisation_url = "https://demo.lizard.net/api/v4/organisations/"
 
         self.headers = {"username": username, "password": password}
-        self.json_headers = dict(
-            self.headers, **{"Content-Type": "application/json"}
-        )
+        self.json_headers = dict(self.headers, **{"Content-Type": "application/json"})
 
         if uuid:
             self.uuid = uuid
@@ -61,9 +55,7 @@ class rasterstore(object):
 
         if update_slugs:
             path = os.path.dirname(os.path.realpath(__file__))
-            self.slug_dict = load_slug_dict(
-                self.raster_url, self.headers, path
-            )
+            self.slug_dict = load_slug_dict(self.raster_url, self.headers, path)
 
     def get_call(self, params, url=None, headers=None):
         if not url:
@@ -84,14 +76,10 @@ class rasterstore(object):
         if "," in slug:
             print("Found", slug.split(","), "as a slug, chose the second")
             slug = slug.split(",")[1]
-        return list(self.slug_dict.keys())[
-            list(self.slug_dict.values()).index(slug)
-        ]
+        return list(self.slug_dict.keys())[list(self.slug_dict.values()).index(slug)]
 
     def get_organisation_uuid(self, organisation):
-        r = self.get_call(
-            {"name__icontains": organisation}, self.organisation_url,
-        )
+        r = self.get_call({"name__icontains": organisation}, self.organisation_url,)
         self.organisation_uuid = r.json()["results"][0]["uuid"]
         return r.json()["results"][0]
 
@@ -115,11 +103,7 @@ class rasterstore(object):
 
     def dataset_search(self, page, dataset, page_size=50):
         return self.get_call(
-            {
-                "datasets__slug": dataset,
-                "page": str(page),
-                "page_size": str(page_size),
-            }
+            {"datasets__slug": dataset, "page": str(page), "page_size": str(page_size)}
         )
 
     def get_slug(self, config):
@@ -158,10 +142,7 @@ class rasterstore(object):
             self.delete_store(store["uuid"])
             return self.reset_config(config)
         else:
-            print(
-                "Overwrite True but store does not exist or could not"
-                " be found"
-            )
+            print("Overwrite True but store does not exist or could not" " be found")
             return None
 
     def delete_store(self, uuid):
@@ -178,9 +159,7 @@ class rasterstore(object):
                 config = new_config
 
         r = post(
-            url=self.raster_url,
-            data=json.dumps(config),
-            headers=self.json_headers,
+            url=self.raster_url, data=json.dumps(config), headers=self.json_headers,
         )
 
         if r.status_code == 201:
@@ -201,9 +180,7 @@ class rasterstore(object):
         print(path)
         url = self.raster_url + self.raster_uuid + "/data/"
 
-        r = post(
-            url=url, files={"file": open(path, "rb")}, headers=self.headers
-        )
+        r = post(url=url, files={"file": open(path, "rb")}, headers=self.headers)
 
         if not r.status_code == codes.ok:
             print("post data failure", r.status_code)
@@ -213,9 +190,7 @@ class rasterstore(object):
             print("post data succes", r.status_code)
 
     def put_data(self, config):
-        r = put(
-            url=self.raster_url, data=json.dumps(config), headers=self.headers,
-        )
+        r = put(url=self.raster_url, data=json.dumps(config), headers=self.headers,)
 
         if not r.status_code == codes.ok:
             print("put data failure", r.status_code)
@@ -225,9 +200,7 @@ class rasterstore(object):
             print("put data succes", r.status_code)
 
     def update(self, config):
-        r = patch(
-            url=self.raster_url, data=json.dumps(config), headers=self.headers,
-        )
+        r = patch(url=self.raster_url, data=json.dumps(config), headers=self.headers,)
 
         if not r.status_code == codes.ok:
             print("patch data failure", r.status_code)
@@ -253,9 +226,7 @@ class rasterstore(object):
             params={"geom": wkt, "style": style, "limit": 100000},
         )
 
-    def atlas2store(
-        self, atlas_json, supplier, rescalable=False, acces_modifier=0
-    ):
+    def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
         raster = atlas_json["rasterstore"]
         atlas = atlas_json["atlas"]
 
@@ -332,9 +303,7 @@ def load_slug_dict(raster_url, headers, path):
 
         page_size = 100
         pages = math.ceil(r["count"] / page_size)
-        args = [
-            (raster_url, headers, p, pages, page_size) for p in range(1, pages)
-        ]
+        args = [(raster_url, headers, p, pages, page_size) for p in range(1, pages)]
 
         slug_dict = {}
         with mp.Pool(processes=10) as pool:

@@ -188,12 +188,8 @@ class vector(object):
 
         return coordTrans
 
-    def rasterize(
-        self, rows, columns, geotransform, nodata=-9999, options=None
-    ):
-        target_ds = DRIVER_GDAL_MEM.Create(
-            "ras.tif", columns, rows, 1, gdal.GDT_Int16
-        )
+    def rasterize(self, rows, columns, geotransform, nodata=-9999, options=None):
+        target_ds = DRIVER_GDAL_MEM.Create("ras.tif", columns, rows, 1, gdal.GDT_Int16)
 
         band = target_ds.GetRasterBand(1)
         band.SetNoDataValue(nodata)
@@ -213,12 +209,7 @@ class vector(object):
         return array
 
     def write(
-        self,
-        path_name,
-        ogr_layer=None,
-        layer_name="vect",
-        epsg=28992,
-        geom_type=None,
+        self, path_name, ogr_layer=None, layer_name="vect", epsg=28992, geom_type=None,
     ):
         if not ogr_layer:
             ogr_layer = self.layer
@@ -323,9 +314,7 @@ class FooMeta(type):
         return self.by_id.iteritems()
 
 
-def create_file(
-    path, layer_name, geom_type, epsg=28992, ogr_driver="ESRI Shapefile"
-):
+def create_file(path, layer_name, geom_type, epsg=28992, ogr_driver="ESRI Shapefile"):
     """ from scratch"""
     ogr_driver = ogr.GetDriverByName(ogr_driver)
     ds = ogr_driver.CreateDataSource(path)
@@ -345,9 +334,7 @@ def create_prj_file(path, epsg=28992):
 
 def create_mem_ds():
     global _mem_num
-    mem_datasource = DRIVER_OGR_MEM.CreateDataSource(
-        "/vsimem/mem{}".format(_mem_num)
-    )
+    mem_datasource = DRIVER_OGR_MEM.CreateDataSource("/vsimem/mem{}".format(_mem_num))
     _mem_num = _mem_num + 1
     return mem_datasource
 
@@ -589,9 +576,7 @@ def correct(in_layer, layer_name="", epsg=3857):
 
         mem_datasource = create_mem_ds()
 
-        mem_layer = mem_datasource.CreateLayer(
-            layer_name, in_spatial_ref, geom_type
-        )
+        mem_layer = mem_datasource.CreateLayer(layer_name, in_spatial_ref, geom_type)
 
         layer_defn = in_layer.GetLayerDefn()
         for i in range(layer_defn.GetFieldCount()):
@@ -608,9 +593,7 @@ def correct(in_layer, layer_name="", epsg=3857):
 
         spatial_ref_3857 = osr.SpatialReference()
         spatial_ref_3857.ImportFromEPSG(int(epsg))
-        reproject = osr.CoordinateTransformation(
-            in_spatial_ref, spatial_ref_3857
-        )
+        reproject = osr.CoordinateTransformation(in_spatial_ref, spatial_ref_3857)
 
         flatten = False
         geom_name = ogr.GeometryTypeToName(geom_type)
@@ -622,9 +605,7 @@ def correct(in_layer, layer_name="", epsg=3857):
         elif geom_type < 0:
             print("error", "geometry invalid, most likely has a z-type")
             raise ValueError(
-                "geometry invalid, most likely has a z-type",
-                "geom type: ",
-                geom_name,
+                "geometry invalid, most likely has a z-type", "geom type: ", geom_name,
             )
 
         # Create output dataset and force dataset to multiparts
@@ -638,9 +619,7 @@ def correct(in_layer, layer_name="", epsg=3857):
             geom_type = 1  # point
 
         out_datasource = create_mem_ds()
-        out_layer = out_datasource.CreateLayer(
-            layer_name, spatial_ref_3857, geom_type
-        )
+        out_layer = out_datasource.CreateLayer(layer_name, spatial_ref_3857, geom_type)
         layer_defn = in_layer.GetLayerDefn()
 
         # Copy fields from memory layer to output dataset
@@ -687,9 +666,7 @@ def correct(in_layer, layer_name="", epsg=3857):
         if len(lost_features) > 0:
             print(
                 "warning",
-                "Lost {} features during corrections".format(
-                    len(lost_features)
-                ),
+                "Lost {} features during corrections".format(len(lost_features)),
             )
             print("warning", "FIDS: {}".format(lost_features))
 
@@ -729,9 +706,7 @@ def dissolve(vector_layer, field=None, simplify=0):
 
     vector_layer.ResetReading()
     out_datasource = copymem(
-        vector_layer,
-        layer_name="dissolve",
-        geom_type=vector_layer.GetGeomType(),
+        vector_layer, layer_name="dissolve", geom_type=vector_layer.GetGeomType(),
     )
     out_layer = out_datasource[0]
     out_layer_defn = out_layer.GetLayerDefn()
@@ -767,9 +742,7 @@ def dissolve(vector_layer, field=None, simplify=0):
                     for single_geom in geometry:
                         single_geom.CloseRings()
                         wkt = single_geom.ExportToWkt()
-                        multi.AddGeometryDirectly(
-                            ogr.CreateGeometryFromWkt(wkt)
-                        )
+                        multi.AddGeometryDirectly(ogr.CreateGeometryFromWkt(wkt))
                 else:
                     geometry.CloseRings()
                     wkt = geometry.ExportToWkt()
@@ -846,10 +819,7 @@ def difference(vector_layer, difference_layer):
                     # Check if geometry collection
                     if diff_part_type == ogr.wkbGeometryCollection:
                         for geom_part in difference:
-                            if (
-                                geom_part.GetGeometryType()
-                                == vector_layer_geom_type
-                            ):
+                            if geom_part.GetGeometryType() == vector_layer_geom_type:
                                 vector_geom, valid = fix_geometry(geom_part)
 
                     else:

@@ -106,9 +106,7 @@ class Layer(ResourceInfo):
 
     @property
     def href(self):
-        return urljoin(
-            self.catalog.service_url, "layers/{}.xml".format(self.name)
-        )
+        return urljoin(self.catalog.service_url, "layers/{}.xml".format(self.name))
 
     @property
     def resource(self):
@@ -167,9 +165,7 @@ class Layer(ResourceInfo):
 
     attribution_object = xml_property("attribution", _read_attribution)
     enabled = xml_property("enabled", lambda x: x.text == "true")
-    advertised = xml_property(
-        "advertised", lambda x: x.text == "true", default=True
-    )
+    advertised = xml_property("advertised", lambda x: x.text == "true", default=True)
 
     def _get_attr_attribution(self):
         return {

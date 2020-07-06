@@ -66,9 +66,7 @@ def unique(data):
 
 
 def get_vector_sld(geoserver_data, vector):
-    return geoserver_data[vector["workspace"]][vector["layername"]][
-        "style"
-    ].sld_body
+    return geoserver_data[vector["workspace"]][vector["layername"]]["style"].sld_body
 
 
 def get_subject_from_name(name, organisation):
@@ -106,9 +104,7 @@ def get_atlas_data(atlas_name):
 
         layer["slug"] = layer["layerName"]
 
-        servers = [
-            key for key, link in SERVERS.items() if link in layer["url"]
-        ]
+        servers = [key for key, link in SERVERS.items() if link in layer["url"]]
         if len(servers) > 0:
             url_split = layer["url"].split("/")
             layer["workspace"] = url_split[-2]
@@ -185,18 +181,13 @@ def set_geoserver_connections(vectors):
 
 def partly_downloads(url, slug, dst, x1="", x2="", y1="", y2=""):
     max_download = 100000
-    total = index_wfs_download(url, slug, 0, 1, x1, x2, y1, y2)[
-        "totalFeatures"
-    ]
+    total = index_wfs_download(url, slug, 0, 1, x1, x2, y1, y2)["totalFeatures"]
     downloads = math.ceil(total / max_download)
     idx = 0
     full = {
         "type": "FeatureCollection",
         "features": [],
-        "crs": {
-            "type": "name",
-            "properties": {"name": "urn:ogc:def:crs:EPSG::4326"},
-        },
+        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"},},
     }
     print("Starting partly collection of features")
     for d in tqdm(range(downloads)):
@@ -218,14 +209,7 @@ def index_wfs_download(url, slug, start, count, x1="", x2="", y1="", y2=""):
         "&bbox={x1},{y1},{x2},{y2},epsg:4326&count={count}"
         "&startIndex={startindex}&OutputFormat=json"
     ).format(
-        url=url,
-        slug=slug,
-        x1=x1,
-        x2=x2,
-        y1=y1,
-        y2=y2,
-        startindex=start,
-        count=count,
+        url=url, slug=slug, x1=x1, x2=x2, y1=y1, y2=y2, startindex=start, count=count,
     )
     r = get(cmd)
     return json.loads(r.content)
@@ -279,9 +263,7 @@ def retrieve_sld(vector, gs_dict, path):
     vector_sld.write_xml(path)
 
 
-def extract_vectors(
-    vectors, temp_dir, organisation, clip_geom, download=False
-):
+def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False):
 
     extract_data_failures = []
     extract_data_succes = []
@@ -298,13 +280,13 @@ def extract_vectors(
             log_time("info", "Processing vector:", vector["name"])
             json_dict = {}
 
-            subject = get_subject_from_name(
-                vector["layername"], vector["workspace"]
-            )
-            meta_path = os.path.join(temp_dir, subject + ".json")
+            subject = get_subject_from_name(vector["layername"], vector["workspace"])
 
+            meta_path_exists = False
+            meta_path = os.path.join(temp_dir, subject + ".json")
             if os.path.exists(meta_path):
                 log_time("info", "Meta file exists, skipping", subject)
+                meta_path_exists = True
                 continue
 
             retrieve_sld(vector, gs_dict, meta_path.replace(".json", ".sld"))
@@ -316,10 +298,7 @@ def extract_vectors(
                     " or download = True",
                 )
                 download_vector(
-                    vector,
-                    temp_dir,
-                    meta_path.replace(".json", ".geojson"),
-                    *bbox,
+                    vector, temp_dir, meta_path.replace(".json", ".geojson"), *bbox,
                 )
 
                 # log_time("info",'Checking feature count outside geometry')
@@ -335,9 +314,7 @@ def extract_vectors(
             extract_data_failures.append(vector)
 
         except MissingSLD as e:
-            vector[
-                "error"
-            ] = "missing sld body layer not in geoserver, {}".format(e)
+            vector["error"] = "missing sld body layer not in geoserver, {}".format(e)
             extract_data_failures.append(vector)
 
         except VectorOutsideArea as e:
@@ -349,9 +326,7 @@ def extract_vectors(
             extract_data_failures.append(vector)
 
         except AttributeError as e:
-            vector[
-                "error"
-            ] = "missing sld body layer not in geoserver, {}".format(e)
+            vector["error"] = "missing sld body layer not in geoserver, {}".format(e)
             extract_data_failures.append(vector)
 
         except json.JSONDecodeError as e:
@@ -363,9 +338,10 @@ def extract_vectors(
             extract_data_succes.append(vector)
 
         finally:
-            json_dict["atlas"] = vector
-            with open(meta_path, "w") as outfile:
-                json.dump(json_dict, outfile)
+            if not meta_path_exists:
+                json_dict["atlas"] = vector
+                with open(meta_path, "w") as outfile:
+                    json.dump(json_dict, outfile)
 
     return extract_data_succes, extract_data_failures
 
@@ -383,9 +359,12 @@ def extract_rasters(rasters, temp_dir, atlas_name):
 
         json_dict = {}
         subject = "_".join(raster["name"].lower().split(" "))
+
+        meta_path_exists = False
         meta_path = os.path.join(temp_dir, subject + ".json")
         if os.path.exists(meta_path):
             log_time("info", "Meta file exists, skipping", subject)
+            meta_path_exists = True
             continue
 
         try:
@@ -393,9 +372,7 @@ def extract_rasters(rasters, temp_dir, atlas_name):
             store_configuration = store.get_store(uuid)
 
         except ValueError as e:
-            raster["error"] = "Does this store exist? {} {}".format(
-                raster["slug"], e
-            )
+            raster["error"] = "Does this store exist? {} {}".format(raster["slug"], e)
             raster_failures.append(raster)
 
         except StoreNotFound as e:
@@ -406,10 +383,13 @@ def extract_rasters(rasters, temp_dir, atlas_name):
 
         else:
             raster_succes.append(raster)
-            json_dict["rasterstore"] = store_configuration
-            json_dict["atlas"] = raster
-            with open(meta_path, "w") as outfile:
-                json.dump(json_dict, outfile)
+
+        finally:
+            if not meta_path_exists:
+                json_dict["rasterstore"] = store_configuration
+                json_dict["atlas"] = raster
+                with open(meta_path, "w") as outfile:
+                    json.dump(json_dict, outfile)
 
     return raster_succes, raster_failures
 
@@ -450,9 +430,9 @@ def extract_atlas(atlas_name, wd, download):
 
     os.chdir(wd)
 
-    vector_dir = mk_dir(os.getcwd(), folder_name="extract_vector")
-    raster_dir = mk_dir(os.getcwd(), folder_name="extract_raster")
-    external_dir = mk_dir(os.getcwd(), folder_name="extract_external")
+    vector_dir = mk_dir(wd, folder_name="extract_vector")
+    raster_dir = mk_dir(wd, folder_name="extract_raster")
+    external_dir = mk_dir(wd, folder_name="extract_external")
 
     data = get_atlas_data(atlas_name)
     unique_data = unique(data)
@@ -469,9 +449,7 @@ def extract_atlas(atlas_name, wd, download):
     log_time("info", "Amount of external wms: {}".format(len(externals)))
 
     atlas = wrap_atlas(atlas_name)
-    clip_geom = atlas.get_boundaring_polygon(
-        atlas_name, "boundary", write=False
-    )
+    clip_geom = atlas.get_boundaring_polygon(atlas_name, "boundary", write=False)
 
     # extract vector data from their respective sources
     extract_vector_succes, extract_vector_failures = extract_vectors(

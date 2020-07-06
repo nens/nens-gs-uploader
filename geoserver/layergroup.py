@@ -80,9 +80,7 @@ class LayerGroup(ResourceInfo):
         self.writers = {
             "name": write_string("name"),
             "styles": _write_styles,
-            "layers": lambda b, l: _write_layers(
-                b, l, parent, element, attributes
-            ),
+            "layers": lambda b, l: _write_layers(b, l, parent, element, attributes),
             "bounds": write_bbox("bounds"),
             "workspace": write_string("workspace"),
         }
@@ -130,17 +128,11 @@ class UnsavedLayerGroup(LayerGroup):
     save_method = settings.POST
 
     def __init__(self, catalog, name, layers, styles, bounds, workspace=None):
-        super(UnsavedLayerGroup, self).__init__(
-            catalog, name, workspace=workspace
-        )
+        super(UnsavedLayerGroup, self).__init__(catalog, name, workspace=workspace)
         if bounds is None:
             bounds = ("-180", "180", "-90", "90", "EPSG:4326")
         self.dirty.update(
-            name=name,
-            layers=layers,
-            styles=styles,
-            bounds=bounds,
-            workspace=workspace,
+            name=name, layers=layers, styles=styles, bounds=bounds, workspace=workspace,
         )
 
     @property
@@ -150,6 +142,5 @@ class UnsavedLayerGroup(LayerGroup):
             workspace_name = getattr(self.workspace, "name", self.workspace)
             path_parts = "workspaces/{}/{}".format(workspace_name, path_parts)
         return urljoin(
-            self.catalog.service_url,
-            "{}?name={}".format(path_parts, self.name),
+            self.catalog.service_url, "{}?name={}".format(path_parts, self.name),
         )

@@ -53,7 +53,7 @@ from configparser import RawConfigParser
 from catalogue.extract_atlas_consultants import extract_atlas
 from catalogue.klimaatatlas import wrap_atlas
 from catalogue.vector import vector as vector_wrap
-from catalogue.project import logger, log_time,  mk_dir
+from catalogue.project import logger, log_time, mk_dir
 from catalogue.wmslayers import wmslayers
 from catalogue.rasterstore import rasterstore
 from catalogue.geoblocks import clip_gemeentes, uuid_store
@@ -63,7 +63,7 @@ from catalogue.geoblocks import clip_gemeentes, uuid_store
 # INSTELLINGEN_PATH = (
 #     "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
 # )
-# __file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue_2.py"
+# __file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue.py"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 GEMEENTEN_PATH = os.path.join(
     dir_path, "catalogue", "data", "gemeentes_2019_4326_2.shp"
@@ -76,9 +76,7 @@ GEMEENTEN_PATH = os.path.join(
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
@@ -156,44 +154,54 @@ def summary(
     raster_extract_failures,
     rasterstore_failures,
     externals,
-    externals_failures
+    externals_failures,
 ):
-
     log_time("info", "summary", "Found vectors in atlas {}".format(len(vectors)))
     for vector in vectors:
-        log_time("info","\t" + vector["name"])
+        print("\t" + vector["name"])
 
-    log_time("info", "summary", "Extract vector failures {}".format(len(vector_extract_failures)))
+    log_time(
+        "info",
+        "summary",
+        "Extract vector failures {}".format(len(vector_extract_failures)),
+    )
     for vector in vector_extract_failures:
-        log_time("info","\t{}:{}".format(vector["name"], vector["error"]))
+        print("\t{}:{}".format(vector["name"], vector["error"]))
 
-    log_time("info", "summary", "Upload-ready vector failures {}".format(len(ready_failure)))
+    log_time(
+        "info", "summary", "Upload-ready vector failures {}".format(len(ready_failure))
+    )
     for vector in ready_failure:
-        log_time("info", "\t{}:{}".format(vector["name"], vector["error"]))
+        print("\t{}:{}".format(vector["name"], vector["error"]))
 
-    log_time("info", "summary", "Upload vector failures {}".format(len(wmslayer_failures)))
+    log_time(
+        "info", "summary", "Upload vector failures {}".format(len(wmslayer_failures))
+    )
     for vector in wmslayer_failures:
-        log_time("info", "\t{}:{}".format(vector["name"], vector["error"]))
+        print("\t{}:{}".format(vector["name"], vector["error"]))
 
-    log_time("info","summary", "Found rasters in atlas {}".format(len(rasters)))
+    log_time("info", "summary", "Found rasters in atlas {}".format(len(rasters)))
     for raster in rasters:
-        log_time("\t" + raster["name"])
+        print("\t" + raster["name"])
 
-    log_time("info", "summary", "Raster extract failures {}".format(len(raster_extract_failures)))
+    log_time(
+        "info",
+        "summary",
+        "Raster extract failures {}".format(len(raster_extract_failures)),
+    )
     for raster in raster_extract_failures:
-        log_time("info", "\t{}:{}".format(raster["name"], raster["error"]))
+        print("\t{}:{}".format(raster["atlas"]["name"], raster["error"]))
 
-    log_time("info", "summary"
-        "Upload to rasterstore failures {}".format(len(rasterstore_failures))
+    log_time(
+        "info",
+        "summary" "Upload to rasterstore failures {}".format(len(rasterstore_failures)),
     )
     for raster in rasterstore_failures:
-        log_time("info","\t{}:{}".format(raster["rasterstore"]["name"], raster["error"]))
+        print("\t{}:{}".format(raster["rasterstore"]["name"], raster["error"]))
 
-    log_time("info", "summary",
-        "External wmslayersin atlas {}".format(len(externals))
-    )
+    log_time("info", "summary", "External wmslayers in atlas {}".format(len(externals)))
     for external in externals_failures:
-        log_time("info", "\t" + external["name"])
+        print("\t" + external["atlas"]["name"])
 
 
 def get_subject_from_name(name, organisation):
@@ -298,26 +306,22 @@ def delete_excess_raster_info(config):
 
 
 def upload_ready_vectors(
-    upload_dir,
-    clip_geom,
-    organisation,
-    epsg,
-    dataset,
+    upload_dir, clip_geom, organisation, epsg, dataset,
 ):
 
     upload_ready_succes = []
     upload_ready_failures = []
 
-    log_time("info" , "upload ready vectors")
+    log_time("info", "upload ready vectors")
     for meta_path in tqdm(glob("extract_vector" + "\*.json")):
 
-        vector_path = meta_path.replace(".json", ".geojson")
+        vector_path = meta_path.replace(".json", ".shp")
         meta_data = json.load(open(meta_path))
-        
-        if 'error' in meta_data['atlas']:
-            log_time('info', 'Skipped {} due to error message'.format(vector_path))
+
+        if "error" in meta_data["atlas"]:
+            log_time("info", "Skipped {} due to error message".format(meta_path))
             continue
-        
+
         vector_name = get_subject_from_name(
             os.path.basename(vector_path).split(".")[0], organisation
         )
@@ -325,9 +329,6 @@ def upload_ready_vectors(
         vector_length = 62
         vector_name_new = vector_name[:vector_length]
         meta_data["vector_name"] = vector_name_new
-
-
-
 
         feature_store = True
         sld_store = True
@@ -346,14 +347,14 @@ def upload_ready_vectors(
         except Exception:
             pass
 
-        if feature_store and os.path.exists(vector_path):
-            fs_vector = vector_wrap(os.path.join(os.getcwd(), vector_path))
-            fs_vector.correct(fs_vector.layer, epsg=epsg)
-            fs_vector.clip(fs_vector.layer, clip_geom)
-            output_file = os.path.join(upload_dir, vector_name_new + ".shp")
-            fs_vector.write(
-                output_file, fs_vector.layer, layer_name=vector_name_new
-            )
+        # if feature_store and os.path.exists(vector_path):
+        #     fs_vector = vector_wrap(os.path.join(os.getcwd(), vector_path))
+        #     fs_vector.correct(fs_vector.layer, epsg=epsg)
+        #     fs_vector.clip(fs_vector.layer, clip_geom)
+        #     output_file = os.path.join(upload_dir, vector_name_new + ".shp")
+        #     fs_vector.write(
+        #         output_file, fs_vector.layer, layer_name=vector_name_new
+        #     )
 
         # copy sld
         if sld_store:
@@ -380,7 +381,7 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
 
             name = meta_data["atlas"]["name"]
 
-            log_time("info",f"Creating wms layer for {name}")
+            log_time("info", f"Creating wms layer for {name}")
 
             wms_info, result_exists = wmslayer.get_layer(name)
 
@@ -413,7 +414,7 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
                     error = False
             else:
                 error = False
-                
+
             if error:
                 continue
 
@@ -459,9 +460,7 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
                 "get_feature_info": True,
             }
 
-            meta_data["wmslayer"] = wmslayer.create(
-                configuration, overwrite=True
-            )
+            meta_data["wmslayer"] = wmslayer.create(configuration, overwrite=True)
 
         except Exception as e:
             print(e)
@@ -486,7 +485,7 @@ def create_atlasstores(
     for meta_path in glob(raster_dir + "/*.json"):
         raster = json.load(open(meta_path))
 
-        log_time("info", "Processing layer:", raster["atlas"]["name"])
+        log_time("info", "Processing rasterstore:", raster["atlas"]["name"])
 
         store = rasterstore()
 
@@ -508,9 +507,7 @@ def create_atlasstores(
         config["supplier"] = setting.eigen_naam
 
         # Description
-        config["description"] = strip_information(
-            raster["atlas"]["information"]
-        )
+        config["description"] = strip_information(raster["atlas"]["information"])
 
         # observation type
         if "observation_type" in config and config["observation_type"]:
@@ -564,8 +561,8 @@ def create_catalogue(inifile):
     set_log_config(setting.ini_location)
     sys.stdout = logger(setting.ini_location)
 
-   # setting.wd = "C:/Users/chris.kerklaan/Documents/temp_meta_only"
-   # setting.download = False
+    # setting.wd = "C:/Users/chris.kerklaan/Documents/temp_meta_only"
+    # setting.download = False
 
     os.chdir(setting.wd)
     (
@@ -596,11 +593,10 @@ def create_catalogue(inifile):
     wmslayer_succes, wmslayer_failures = create_wmslayers(
         upload_dir, setting, clip_geom.GetEnvelope()
     )
-    
+
     wmslayer_succes, wmslayer_failures = create_wmslayers(
         "extract_external", setting, clip_geom.GetEnvelope()
     )
-    
 
     raster_clip_ids = get_clip_id(clip_geom)
     raster_succes, raster_failures = create_atlasstores(
@@ -615,7 +611,7 @@ def create_catalogue(inifile):
         extract_rast_failures,
         raster_failures,
         externals,
-        extract_ext_failures
+        extract_ext_failures,
     )
 
 

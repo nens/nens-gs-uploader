@@ -76,9 +76,7 @@ class Style(ResourceInfo):
         if user_style:
             try:
                 # it is not mandatory
-                title_node = user_style.find(
-                    "{http://www.opengis.net/sld}Title"
-                )
+                title_node = user_style.find("{http://www.opengis.net/sld}Title")
             except:
                 title_node = None
         if title_node is not None:

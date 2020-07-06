@@ -52,14 +52,10 @@ def print_time(s1="", s2="", size="s"):
 
     now = datetime.datetime.now()
     if size == "s":
-        _print = "{} - {} - {} - {}".format(
-            now, now - time_last_print_small, s1, s2
-        )
+        _print = "{} - {} - {} - {}".format(now, now - time_last_print_small, s1, s2)
 
     elif size == "l":
-        _print = "{} - {} - {} - {}".format(
-            now, now - time_last_print_large, s1, s2
-        )
+        _print = "{} - {} - {} - {}".format(now, now - time_last_print_large, s1, s2)
 
     else:
         pass

@@ -105,9 +105,7 @@ class wrap_raster(object):
         ds_vector = DRIVER_OGR_SHP.CreateDataSource(vector_path)
         srs = osr.SpatialReference(wkt=prj)
         layer_vector = ds_vector.CreateLayer(layer_name, srs=srs)
-        raster_field = ogr.FieldDefn(
-            field_name, type_mapping[self.band.DataType]
-        )
+        raster_field = ogr.FieldDefn(field_name, type_mapping[self.band.DataType])
         layer_vector.CreateField(raster_field)
 
         if no_mask:
@@ -149,9 +147,7 @@ class wrap_raster(object):
         global _mem_num
         vector_path = f"/vsimem/shape_{_mem_num}.tif"
         _mem_num = _mem_num + 1
-        self.array[
-            (self.array > threshold) & (self.array != self.nodata_value)
-        ] = 1
+        self.array[(self.array > threshold) & (self.array != self.nodata_value)] = 1
         self.array[(self.array <= threshold)] = self.nodata_value
 
         self.write(self.array, vector_path, self.geotransform)
@@ -283,9 +279,7 @@ def split(dataset, n):
             transform[4],
             transform[5],
         )
-        dst_ds = DRIVER_GDAL_GTIFF.Create(
-            name, new_cols, new_rows, 1, gdal.GDT_Float32
-        )
+        dst_ds = DRIVER_GDAL_GTIFF.Create(name, new_cols, new_rows, 1, gdal.GDT_Float32)
 
         dst_ds.GetRasterBand(1).WriteArray(data)
 
@@ -324,9 +318,7 @@ def polygonize_in_tiles(raster_ds, n=5):
     for tile in tqdm(chunks):
         raster = wrap_raster(tile)
 
-        vector_ds, vector_layer = raster.polygonize(
-            field_name="koel", verbose=True
-        )
+        vector_ds, vector_layer = raster.polygonize(field_name="koel", verbose=True)
         vectors.append(vector_ds)
     return vectors
 

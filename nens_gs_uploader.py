@@ -38,9 +38,7 @@ import argparse
 from glob import glob
 
 # Test arguments
-inifile = (
-    "C:/Users/chris.kerklaan/tools/instellingen/flevoland/nens_gs_uploader.ini"
-)
+inifile = "C:/Users/chris.kerklaan/tools/instellingen/flevoland/nens_gs_uploader.ini"
 sys.path.append("C:/Users/chris.kerklaan/tools")
 del sys.path[0]
 
@@ -80,9 +78,7 @@ for handler in logging.root.handlers[:]:
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
@@ -109,9 +105,7 @@ def get_subject_from_name(name, organisation):
 
 
 def get_subject_from_path(path, organisation):
-    return get_subject_from_name(
-        os.path.basename(path).split(".")[0], organisation
-    )
+    return get_subject_from_name(os.path.basename(path).split(".")[0], organisation)
 
 
 def get_paths_and_subjects(setting, source):
@@ -119,8 +113,7 @@ def get_paths_and_subjects(setting, source):
         in_paths = glob(setting.directory + "/*.shp")
         in_paths = in_paths + glob(setting.directory + "/*.gpkg")
         subjects = [
-            get_subject_from_path(in_path, setting.organisatie)
-            for in_path in in_paths
+            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
         ]
 
     elif source == "postgis":
@@ -132,8 +125,7 @@ def get_paths_and_subjects(setting, source):
     if setting.wms_layer_only:
         in_paths = glob(setting.directory + "/*.json")
         subjects = [
-            get_subject_from_path(in_path, setting.organisatie)
-            for in_path in in_paths
+            get_subject_from_path(in_path, setting.organisatie) for in_path in in_paths
         ]
     return in_paths, subjects
 
@@ -221,25 +213,20 @@ def add_output_settings(setting, onderwerp, in_path):
             setting.bo_nummer, setting.organisatie, onderwerp
         )
         workspace_name = setting.organisatie + "_" + setting.product_naam
-    elif (
-        "PROJECTEN" in setting.server_naam or "STAGING" in setting.server_naam
-    ):
+    elif "PROJECTEN" in setting.server_naam or "STAGING" in setting.server_naam:
         layer_name = "{}_{}_{}_{}".format(
             setting.project_nummer.lower(),
             setting.organisatie,
             onderwerp,
             setting.einddatum,
         )
-        workspace_name = "p_{}_{}".format(
-            setting.organisatie, setting.product_naam
-        )
+        workspace_name = "p_{}_{}".format(setting.organisatie, setting.product_naam)
 
     else:
         raise ValueError("servernaam fout")
 
     store_name = "{}_{}".format(
-        setting.project_nummer.lower(),
-        PG_DATABASE[setting.server_naam]["database"],
+        setting.project_nummer.lower(), PG_DATABASE[setting.server_naam]["database"],
     )
 
     # abstracts and titles
@@ -302,9 +289,7 @@ def add_output_settings(setting, onderwerp, in_path):
     slug = ":".join([workspace_name, layer_name][:50])
 
     # wms
-    wms_url = REST[setting.server_naam].replace(
-        "rest", "{}/wms".format(workspace_name)
-    )
+    wms_url = REST[setting.server_naam].replace("rest", "{}/wms".format(workspace_name))
 
     # lizard wms acces
     access = 0
@@ -327,9 +312,7 @@ def add_output_settings(setting, onderwerp, in_path):
 
         setting.in_datasource = in_path
         setting.in_layer = None
-        setting.in_sld_path = in_path.replace(
-            os.path.splitext(in_path)[1], ".sld"
-        )
+        setting.in_sld_path = in_path.replace(os.path.splitext(in_path)[1], ".sld")
         setting.skip = False
 
         # Extra directory setting
@@ -405,9 +388,7 @@ def add_output_settings(setting, onderwerp, in_path):
                 "shared_with": [],
                 "datasets": [setting.dataset],
                 "organisation": setting.organisation_uuid,
-                "download_url": setting.wmslayer.get_download_url(
-                    wms_url, slug
-                ),
+                "download_url": setting.wmslayer.get_download_url(wms_url, slug),
                 "legend_url": setting.wmslayer.get_legend_url(wms_url, slug),
                 "get_feature_info_url": wms_url,
                 "get_feature_info": True,
@@ -523,10 +504,7 @@ def upload(setting):
     if not setting.skip_correction:
         log_time("info", setting.layer_name, "1. vector corrections")
         vector.correct(
-            vector.layer,
-            setting.layer_name,
-            setting.epsg,
-            driver="ESRI Shapefile",
+            vector.layer, setting.layer_name, setting.epsg, driver="ESRI Shapefile",
         )
         setting.layer_name = vector.layer_name
 
@@ -613,14 +591,10 @@ def upload(setting):
         if setting.use_existing_geoserver_sld:
             log_time("info", setting.layer_name, "6-9. Setting existing sld.")
             server.set_sld_for_layer(
-                workspace_name=None,
-                style_name=setting.existing_sld,
-                use_custom=True,
+                workspace_name=None, style_name=setting.existing_sld, use_custom=True,
             )
         else:
-            log_time(
-                "info", setting.layer_name, "6. Load Style Layer Descriptor."
-            )
+            log_time("info", setting.layer_name, "6. Load Style Layer Descriptor.")
 
             sld = wrap_sld(setting.in_sld_path, _type="path")
 

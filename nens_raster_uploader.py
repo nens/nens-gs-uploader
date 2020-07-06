@@ -52,9 +52,7 @@ inifile = "C:/Users/chris.kerklaan/tools/instellingen/inzicht_in_het_achterland/
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
@@ -124,9 +122,7 @@ def add_output_settings(setting):
         else:
             add_on = setting.bo_nummer
 
-        in_name = "{}_{}_{}".format(
-            add_on, setting.organisatie, setting.onderwerp
-        )
+        in_name = "{}_{}_{}".format(add_on, setting.organisatie, setting.onderwerp)
         abstract_data = ""
 
         styles = {
@@ -150,17 +146,11 @@ def add_output_settings(setting):
         setting.configuration = configuration
 
     if not setting.organisatie_uuid == "None":
-        setting.configuration.update(
-            {"organisation": setting.organisatie_uuid}
-        )
+        setting.configuration.update({"organisation": setting.organisatie_uuid})
 
     else:
         setting.configuration.update(
-            {
-                "organisation": setting.store.get_organisation_uuid("nelen")[
-                    "uuid"
-                ]
-            }
+            {"organisation": setting.store.get_organisation_uuid("nelen")["uuid"]}
         )
 
     if not setting.dataset == "None":

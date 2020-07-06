@@ -73,9 +73,7 @@ OGR_GPKG_DRIVER = ogr.GetDriverByName("GPKG")
 
 # GLOBALS
 POLYGON = "POLYGON (({x1} {y1},{x2} {y1},{x2} {y2},{x1} {y2},{x1} {y1}))"
-INSTELLINGEN_PATH = (
-    "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
-)
+INSTELLINGEN_PATH = "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
 
 
 class MissingSLD(Exception):
@@ -99,9 +97,7 @@ class ObservationTypeNotInStore(Exception):
 def get_parser():
     """ Return argument parser. """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "inifile", metavar="INIFILE", help="Settings voor inifile."
-    )
+    parser.add_argument("inifile", metavar="INIFILE", help="Settings voor inifile.")
     return parser
 
 
@@ -185,9 +181,7 @@ def get_rasters_and_vectors(atlas_name):
 
         layer["slug"] = layer["layerName"]
 
-        servers = [
-            key for key, link in SERVERS.items() if link in layer["url"]
-        ]
+        servers = [key for key, link in SERVERS.items() if link in layer["url"]]
         if len(servers) > 0:
             url_split = layer["url"].split("/")
             layer["workspace"] = url_split[-2]
@@ -211,9 +205,7 @@ def unique(data):
 
 
 def get_vector_sld(geoserver_data, vector):
-    return geoserver_data[vector["workspace"]][vector["layername"]][
-        "style"
-    ].sld_body
+    return geoserver_data[vector["workspace"]][vector["layername"]]["style"].sld_body
 
 
 def get_subject_from_name(name, organisation):
@@ -296,9 +288,7 @@ def get_datasource(vector, organisation):
         # print('ds lizard project')
         return lizard_project_ds.datasource
     else:
-        return ogr.Open(
-            vector_in_data_directories(vector["layername"], organisation)
-        )
+        return ogr.Open(vector_in_data_directories(vector["layername"], organisation))
 
     return 0
 
@@ -472,9 +462,7 @@ def extract_vector_data(vectors, temp_dir, organisation, meta_only=True):
     print("Extracting vector data")
     for vector in tqdm(vectors):
         try:
-            subject = get_subject_from_name(
-                vector["layername"], vector["workspace"]
-            )
+            subject = get_subject_from_name(vector["layername"], vector["workspace"])
             meta_path = os.path.join(temp_dir, subject + ".json")
             gpkg_path = os.path.join(temp_dir, subject + ".gpkg")
 
@@ -508,23 +496,19 @@ def extract_vector_data(vectors, temp_dir, organisation, meta_only=True):
             vector["temp_path"] = None
 
         except VectorNotFound as e:
-            vector[
-                "extract_error"
-            ] = "vector not in directory or postgis {}".format(e)
+            vector["extract_error"] = "vector not in directory or postgis {}".format(e)
             vector["temp_path"] = None
             extract_data_failures.append(vector)
 
         except FoundCoverageStore as e:
-            vector[
-                "extract_error"
-            ] = "Found coverage store instead of vector{}".format(e)
+            vector["extract_error"] = "Found coverage store instead of vector{}".format(
+                e
+            )
             vector["temp_path"] = None
             extract_data_failures.append(vector)
 
         except AttributeError as e:
-            vector[
-                "extract_error"
-            ] = "Vector in postgres db but not in gs{}".format(e)
+            vector["extract_error"] = "Vector in postgres db but not in gs{}".format(e)
             vector["temp_path"] = None
             extract_data_failures.append(vector)
 
@@ -563,9 +547,7 @@ def upload_ready(
             os.path.basename(vector_path).split(".")[0], organisation
         )
 
-        vector_length = 62 - len(
-            "{}:{}_{}_".format(dataset, bo_nummer, organisation)
-        )
+        vector_length = 62 - len("{}:{}_{}_".format(dataset, bo_nummer, organisation))
         vector_name_new = vector_name[:vector_length]
         meta_data["vector_name"] = vector_name_new
         meta_data["slug_new"] = "{}:{}_{}_{}".format(
@@ -609,10 +591,7 @@ def upload_ready(
                 print("clip fail, feature count is 0")
                 raise ValueError("clip fail, feature count is 0")
 
-                match = (
-                    clipped_layer.GetFeatureCount()
-                    / vector_layer.GetFeatureCount()
-                )
+                match = clipped_layer.GetFeatureCount() / vector_layer.GetFeatureCount()
                 if match < 0.95:
                     raise ValueError("low clip match", match, "%")
 
@@ -633,9 +612,7 @@ def upload_ready(
     return upload_ready_succes, upload_ready_failures
 
 
-def upload_data(
-    upload_dir, bo_nummer, organisation, eigen_naam, project_nummer
-):
+def upload_data(upload_dir, bo_nummer, organisation, eigen_naam, project_nummer):
     create_nens_gs_uploader_instellingen(
         upload_dir,
         bo_nummer_replace=bo_nummer,
@@ -822,9 +799,7 @@ def atlas2catalogue_rasterstores(
         configuration_new["supplier"] = "chris.kerklaan"
 
         # Description
-        configuration_new["description"] = strip_information(
-            raster["information"]
-        )
+        configuration_new["description"] = strip_information(raster["information"])
 
         # observation type
         try:
@@ -953,12 +928,7 @@ def create_catalogue(inifile):
     rasters[9]["uuid"] = "9c6f0130-001b-4747-9c9f-2a65b9370b32"
 
     raster_succes, raster_failures = atlas2catalogue_rasterstores(
-        rasters,
-        raster_clip_id,
-        bo_nummer,
-        organisatie,
-        dataset,
-        overwrite=False,
+        rasters, raster_clip_id, bo_nummer, organisatie, dataset, overwrite=False,
     )
 
 

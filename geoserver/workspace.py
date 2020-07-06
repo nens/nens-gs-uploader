@@ -28,9 +28,7 @@ class Workspace(ResourceInfo):
 
     @property
     def href(self):
-        return urljoin(
-            self.catalog.service_url, "workspaces/{}.xml".format(self.name)
-        )
+        return urljoin(self.catalog.service_url, "workspaces/{}.xml".format(self.name))
 
     @property
     def coveragestore_url(self):
@@ -42,15 +40,13 @@ class Workspace(ResourceInfo):
     @property
     def datastore_url(self):
         return urljoin(
-            self.catalog.service_url,
-            "workspaces/{}/datastores.xml".format(self.name),
+            self.catalog.service_url, "workspaces/{}/datastores.xml".format(self.name),
         )
 
     @property
     def wmsstore_url(self):
         return urljoin(
-            self.catalog.service_url,
-            "workspaces/{}/wmsstores.xml".format(self.name),
+            self.catalog.service_url, "workspaces/{}/wmsstores.xml".format(self.name),
         )
 
     enabled = xml_property("enabled", lambda x: x.lower() == "true")

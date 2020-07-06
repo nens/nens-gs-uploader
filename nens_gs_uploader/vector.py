@@ -182,12 +182,7 @@ class wrap_shape(object):
         self.ds = None
 
     def write(
-        self,
-        ogr_layer,
-        path_name,
-        layer_name="vect",
-        epsg=28992,
-        overwrite="YES",
+        self, ogr_layer, path_name, layer_name="vect", epsg=28992, overwrite="YES",
     ):
 
         self.get_spatial_reference(epsg=epsg)
@@ -198,10 +193,7 @@ class wrap_shape(object):
             data_source = DRIVER_OGR_SHP.CreateDataSource(path_name)
 
         out_layer = data_source.CreateLayer(
-            layer_name,
-            self.sr,
-            self.geom_type,
-            ["OVERWRITE={}".format(overwrite)],
+            layer_name, self.sr, self.geom_type, ["OVERWRITE={}".format(overwrite)],
         )
 
         for i in range(self.layer_defn.GetFieldCount()):
@@ -224,9 +216,7 @@ class wrap_shape(object):
                 self.addPolygon(geom.ExportToWkb(), out_lyr)
 
     def rasterize(self, rows, columns, geotransform, nodata=-9999):
-        target_ds = DRIVER_GDAL_MEM.Create(
-            "ras.tif", columns, rows, 1, gdal.GDT_Int16
-        )
+        target_ds = DRIVER_GDAL_MEM.Create("ras.tif", columns, rows, 1, gdal.GDT_Int16)
 
         band = target_ds.GetRasterBand(1)
         band.SetNoDataValue(nodata)
@@ -520,8 +510,7 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
         if len(layer_name) + 10 > 64:
             log_time("error", "laagnaam te lang, 50 characters max.")
             log_time(
-                "info",
-                "formatting naar 50 met deze naam: %s" % layer_name[:50],
+                "info", "formatting naar 50 met deze naam: %s" % layer_name[:50],
             )
             layer_name = layer_name[:50]
 
@@ -537,8 +526,7 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
         else:
             log_time(
                 "Error",
-                "Geometry could not be translated to singlepart %s"
-                % geom_name,
+                "Geometry could not be translated to singlepart %s" % geom_name,
             )
             raise TypeError()
 
@@ -556,9 +544,7 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
 
         in_spatial_ref = in_layer.GetSpatialRef()
         # print(in_spatial_ref, int(epsg))
-        reproject, out_spatial_ref = create_geom_transform(
-            in_spatial_ref, int(epsg)
-        )
+        reproject, out_spatial_ref = create_geom_transform(in_spatial_ref, int(epsg))
 
         flatten = False
         if "3D" in geom_name:
@@ -569,9 +555,7 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
         elif geom_type < 0:
             log_time("error", "geometry invalid, most likely has a z-type")
             raise ValueError(
-                "geometry invalid, most likely has a z-type",
-                "geom type: ",
-                geom_name,
+                "geometry invalid, most likely has a z-type", "geom type: ", geom_name,
             )
 
         out_datasource, out_layer = copymem(
@@ -591,9 +575,7 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
                 print(e)
                 print(out_feat.GetFID())
             if not valid:
-                log_time(
-                    "warning", "geometry invalid even with buffer, skipping"
-                )
+                log_time("warning", "geometry invalid even with buffer, skipping")
                 lost_features.append(out_feat.GetFID())
                 continue
 
@@ -621,21 +603,15 @@ def correct(in_layer, layer_name="", epsg=3857, driver="MEM"):
         if len(lost_features) > 0:
             log_time(
                 "warning",
-                "Lost {} features during corrections".format(
-                    len(lost_features)
-                ),
+                "Lost {} features during corrections".format(len(lost_features)),
             )
             log_time("warning", "FIDS: {}".format(lost_features))
 
         elif in_feature_count > out_feature_count:
-            log_time(
-                "warning", "In feature count greater than out feature count"
-            )
+            log_time("warning", "In feature count greater than out feature count")
 
         else:
-            print(
-                "info", "check  - Features count {}".format(out_feature_count)
-            )
+            print("info", "check  - Features count {}".format(out_feature_count))
 
     except Exception as e:
         print(e)
@@ -712,9 +688,7 @@ def difference(vector_layer, difference_layer):
     else:
         pass
 
-    out_datasource, out_layer = copymem(
-        vector_layer, geom_type=vector_layer_geom_type
-    )
+    out_datasource, out_layer = copymem(vector_layer, geom_type=vector_layer_geom_type)
     vector_layer_defn = vector_layer.GetLayerDefn()
 
     print("starting to make a difference_layer")
@@ -748,10 +722,7 @@ def difference(vector_layer, difference_layer):
                     # Check if geometry collection
                     if diff_part_type == ogr.wkbGeometryCollection:
                         for geom_part in difference:
-                            if (
-                                geom_part.GetGeometryType()
-                                == vector_layer_geom_type
-                            ):
+                            if geom_part.GetGeometryType() == vector_layer_geom_type:
                                 vector_geom, valid = fix_geometry(geom_part)
 
                     else:
@@ -871,9 +842,7 @@ def vector_to_geom(extent_path, epsg=28992):
 
 if __name__ == "__main__":
     extent_path = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/extent/extent_dissolved.shp"
-    input_dir = (
-        "C:/Users/chris.kerklaan/Documents/Projecten/flooding/fixed/fixed_1"
-    )
+    input_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/fixed/fixed_1"
     output_dir = "C:/Users/chris.kerklaan/Documents/Projecten/flooding/output"
 
     extent_vector = wrap_shape(extent_path)
@@ -887,9 +856,7 @@ if __name__ == "__main__":
         if vector.split(".")[1] != "shp":
             continue
         vector_path = os.path.join(input_dir, vector)
-        vector_out_path = os.path.join(
-            output_dir, vector.split(".")[0] + "_clip.shp"
-        )
+        vector_out_path = os.path.join(output_dir, vector.split(".")[0] + "_clip.shp")
         if os.path.exists(vector_out_path):
             print(vector_out_path, "exists, skip")
             continue

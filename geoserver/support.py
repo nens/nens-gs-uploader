@@ -301,9 +301,7 @@ def md_dynamic_default_values_info(name, node):
 
 def md_dimension_info(name, node):
     """Extract metadata Dimension Info from an xml node"""
-    child_text = lambda child_name: getattr(
-        node.find(child_name), "text", None
-    )
+    child_text = lambda child_name: getattr(node.find(child_name), "text", None)
     resolution = child_text("resolution")
     default_value = node.find("defaultValue")
     if default_value is not None:
@@ -342,13 +340,7 @@ class JDBCVirtualTableParam(object):
 
 class JDBCVirtualTable(object):
     def __init__(
-        self,
-        _name,
-        _sql,
-        _escapeSql,
-        _geometry,
-        _keyColumn=None,
-        _parameters=None,
+        self, _name, _sql, _escapeSql, _geometry, _keyColumn=None, _parameters=None,
     ):
         self.name = _name
         self.sql = _sql
@@ -384,9 +376,7 @@ def md_jdbc_virtual_table(key, node):
         parameters.append(
             JDBCVirtualTableParam(p_name, p_defaultValue, p_regexpValidator)
         )
-    return JDBCVirtualTable(
-        name, sql, escapeSql, geometry, keyColumn, parameters
-    )
+    return JDBCVirtualTable(name, sql, escapeSql, geometry, keyColumn, parameters)
 
 
 def md_entry(node):
@@ -403,9 +393,7 @@ def md_entry(node):
     if key in ["time", "elevation"] or key.startswith("custom_dimension"):
         value = md_dimension_info(key, node.find("dimensionInfo"))
     elif key == "DynamicDefaultValues":
-        value = md_dynamic_default_values_info(
-            key, node.find("DynamicDefaultValues")
-        )
+        value = md_dynamic_default_values_info(key, node.find("DynamicDefaultValues"))
     elif key == "JDBC_VIRTUAL_TABLE":
         value = md_jdbc_virtual_table(key, node.find("virtualTable"))
     else:
@@ -470,8 +458,7 @@ def attribute_list(node):
 def key_value_pairs(node):
     if node is not None:
         return dict(
-            (entry.attrib["key"], entry.text)
-            for entry in node.findall("entry")
+            (entry.attrib["key"], entry.text) for entry in node.findall("entry")
         )
 
 

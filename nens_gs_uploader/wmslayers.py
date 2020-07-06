@@ -93,15 +93,12 @@ class wmslayers(object):
 
     def get_legend_url(self, wms_path, slug):
         return (
-            "{}?REQUEST=GetLegendGraphic&VERSION=1.0.0&"
-            "FORMAT=image/png&LAYER={}&{}"
+            "{}?REQUEST=GetLegendGraphic&VERSION=1.0.0&" "FORMAT=image/png&LAYER={}&{}"
         ).format(wms_path, slug, LEGEND_OPTIONS)
 
     def delete(self, uuid):
 
-        r = delete(
-            url=self.wmslayer_uuid.format(uuid=uuid), headers=self.get_headers
-        )
+        r = delete(url=self.wmslayer_uuid.format(uuid=uuid), headers=self.get_headers)
         if r.status_code == 204:
             print("delete store succes", r.status_code)
         else:
@@ -139,11 +136,7 @@ class wmslayers(object):
     def post_data(self, path):
         url = self.wmslayer_url + self.wmslayer_uuid + "/data/"
 
-        r = post(
-            url=url,
-            files={"file": open(path, "rb")},
-            headers=self.post_headers,
-        )
+        r = post(url=url, files={"file": open(path, "rb")}, headers=self.post_headers,)
 
         if not r.status_code == codes.ok:
             print("post data failure", r.status_code)
@@ -153,13 +146,7 @@ class wmslayers(object):
             print("post data succes", r.status_code)
 
     def atlas2wms(
-        self,
-        atlas_dict,
-        organisation_uuid,
-        dataset,
-        supplier,
-        organisation,
-        product,
+        self, atlas_dict, organisation_uuid, dataset, supplier, organisation, product,
     ):
 
         # correct data
@@ -187,13 +174,7 @@ class wmslayers(object):
         }
 
     def geoserver2wms(
-        self,
-        geoserver,
-        slug,
-        supplier,
-        dataset,
-        organisation_uuid=None,
-        access=0,
+        self, geoserver, slug, supplier, dataset, organisation_uuid=None, access=0,
     ):
         server = wrap_geoserver(geoserver)
         server.get_layer(slug, easy=False)
