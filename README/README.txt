@@ -9,7 +9,8 @@ De volgende stappen worden binnen deze scripts gevolgd:
 
 Stappen om atlas2catalogue.py te gebruiken.
 	1. Kloon https://github.com/nens/nens-gs-uploader naar je computer.
-	2. Download anaconda: https://www.anaconda.com/products/individual
+	2. Download anaconda: https://www.anaconda.com/products/individual.
+	3. Mocht je anaconda al hebben doe eerst: conda update conda.
 	3. Installeer de juiste omgeving. 
 		- Draai daarvoor op nens-gs-uploader/install/install_environment.bat vanuit je anaconda command prompt.
 		- werkt dit niet? Draai dan de commands uit create_env.txt in dezelfde folder in anaconda command prompt.

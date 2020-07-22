@@ -7,7 +7,8 @@ Created on Tue Feb  4 13:40:01 2020
 Extract atlas data for consultants
 
 TODO:
-    1. Extract raw data for raster
+    1. Overwrite functie voor rasterstores -- update slug_dictionary
+    2. Extract raw data voor rasters 
     
 Done:
     1. Added external scripts
@@ -18,7 +19,6 @@ Done:
 
 # System imports
 import os
-import sys
 
 # Third-party imports
 import ogr
@@ -40,6 +40,7 @@ from catalogue.klimaatatlas import wrap_atlas
 from catalogue.rasterstore import rasterstore
 from catalogue.geoblocks import clip_gemeentes
 from catalogue.rasterstore import StoreNotFound
+from catalogue.downloader import download_lizard_raster, set_headers
 
 # Exceptions
 class MissingSLD(Exception):
@@ -187,7 +188,7 @@ def partly_downloads(url, slug, dst, x1="", x2="", y1="", y2=""):
     full = {
         "type": "FeatureCollection",
         "features": [],
-        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"},},
+        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::28992"},},
     }
     print("Starting partly collection of features")
     for d in tqdm(range(downloads)):
@@ -205,7 +206,7 @@ def partly_downloads(url, slug, dst, x1="", x2="", y1="", y2=""):
 
 def index_wfs_download(url, slug, start, count, x1="", x2="", y1="", y2=""):
     cmd = (
-        "{url}?&request=GetFeature&typeName={slug}&srsName=epsg:4326"
+        "{url}?&request=GetFeature&typeName={slug}&srsName=epsg:28992"
         "&bbox={x1},{y1},{x2},{y2},epsg:4326&count={count}"
         "&startIndex={startindex}&OutputFormat=json"
     ).format(
@@ -218,7 +219,7 @@ def index_wfs_download(url, slug, start, count, x1="", x2="", y1="", y2=""):
 def download_vector(vector, temp_dir, dst_json, x1="", x2="", y1="", y2=""):
     download_url = (
         "{url}?&request=GetFeature&typeName={slug}&srsName=epsg:4326"
-        "&bbox={x1},{y1},{x2},{y2},epsg:4326&OutputFormat=application/json"
+        "&bbox={x1},{y1},{x2},{y2},epsg:28992&OutputFormat=application/json"
     ).format(
         url=vector["url"].replace("wms", "wfs"),
         slug=vector["slug"],
@@ -263,7 +264,7 @@ def retrieve_sld(vector, gs_dict, path):
     vector_sld.write_xml(path)
 
 
-def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False):
+def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False, bound_error=False):
 
     extract_data_failures = []
     extract_data_succes = []
@@ -307,7 +308,8 @@ def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False):
                 #                                                  ".shp"),
                 #                                                   clip_geom)
                 # if count > 0:
-                raise VectorOutsideArea(f"Outside atlas area")
+                if bound_error:    
+                    raise VectorOutsideArea(f"Outside atlas area")
 
         except DownloadFailure as e:
             vector["error"] = "Download failure, message:{}".format(e)
@@ -346,12 +348,12 @@ def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False):
     return extract_data_succes, extract_data_failures
 
 
-def extract_rasters(rasters, temp_dir, atlas_name):
+def extract_rasters(rasters, temp_dir, atlas_name, download=False, resolution=10, clip_geom=None, clip_geom_nl=None):
 
     raster_failures = []
     raster_succes = []
 
-    store = rasterstore(update_slugs=True)
+    store = rasterstore()
 
     # Start raster changes
     for raster in rasters:
@@ -369,7 +371,36 @@ def extract_rasters(rasters, temp_dir, atlas_name):
 
         try:
             uuid = store.get_uuid_by_slug(raster["slug"])
-            store_configuration = store.get_store(uuid)
+            config = store.get_store(uuid)
+            
+            if download:
+                    e = clip_geom.GetEnvelope()
+                    nl = clip_geom_nl.GetEnvelope()
+                    bounds = {"west": e[0],
+                              "east": e[1],
+                              "north": e[3],
+                              "south": e[2]}
+                    
+                    
+                    width = int((nl[1] - nl[0])/ resolution)
+                    height = int((nl[3] - nl[2]) / resolution) 
+                    
+                    while (width * height) > 1000000000:
+                        resolution = resolution + 0.5
+                        log_time('warning',
+                                 'maximum download support is 1000000000')
+                        log_time('Waring',
+                                 f'Lowering resolution to {resolution}')
+                        width = int((nl[1] - nl[0])/ resolution)
+                        height = int((nl[3] - nl[2]) / resolution)                        
+                        
+                    pathname = os.path.join(temp_dir, subject +".tif")
+                    download_lizard_raster(uuid, 
+                                           "EPSG:28992",
+                                           bounds=bounds, 
+                                           width=width,
+                                           height=height,
+                                           pathname=pathname)
 
         except ValueError as e:
             raster["error"] = "Does this store exist? {} {}".format(raster["slug"], e)
@@ -386,7 +417,7 @@ def extract_rasters(rasters, temp_dir, atlas_name):
 
         finally:
             if not meta_path_exists:
-                json_dict["rasterstore"] = store_configuration
+                json_dict["rasterstore"] = config
                 json_dict["atlas"] = raster
                 with open(meta_path, "w") as outfile:
                     json.dump(json_dict, outfile)
@@ -425,7 +456,7 @@ def extract_external(externals, temp_dir):
     return extract_data_succes, extract_data_failures
 
 
-def extract_atlas(atlas_name, wd, download):
+def extract_atlas(atlas_name, wd, download, resolution=10):
     """ Returns batch upload shapes for one geoserver """
 
     os.chdir(wd)
@@ -442,14 +473,16 @@ def extract_atlas(atlas_name, wd, download):
 
     log_time("info", "Raster directory:", raster_dir)
     log_time("info", "Vector directory:", vector_dir)
-    log_time("info", "exteral wms directory:", external_dir)
+    log_time("info", "Exteral wms directory:", external_dir)
 
     log_time("info", "Amount of vectors: {}".format(len(vectors)))
     log_time("info", "Amount of rasters: {}".format(len(rasters)))
     log_time("info", "Amount of external wms: {}".format(len(externals)))
 
     atlas = wrap_atlas(atlas_name)
-    clip_geom = atlas.get_boundaring_polygon(atlas_name, "boundary", write=False)
+    clip_geom = atlas.get_boundaring_polygon(atlas_name, "boundary", write = False)
+    clip_geom_nl =  atlas.get_boundaring_polygon(atlas_name, "boundary", 
+                                                 write=False, epsg=28992)
 
     # extract vector data from their respective sources
     extract_vector_succes, extract_vector_failures = extract_vectors(
@@ -457,7 +490,7 @@ def extract_atlas(atlas_name, wd, download):
     )
 
     extract_raster_succes, extract_raster_failures = extract_rasters(
-        rasters, raster_dir, atlas_name,
+        rasters, raster_dir, atlas_name, False, resolution, clip_geom, clip_geom_nl
     )
     extract_ext_succes, exteract_ext_failures = extract_external(
         externals, external_dir

@@ -15,17 +15,17 @@ def clip_gemeentes(input_block, gemeentes):
 
     clip_block = {
         "gemeente_ids": [
-            "geoblocks.raster.sources.RasterStoreSource",
-            "file:///mnt/rastprod/stores/nelen-schuurmans/2019-gemeente-ids-3yz1ll9j",
+            "lizard_nxt.blocks.LizardRasterSource",
+            "ccd7de9e-037a-47a7-9c9d-0a5b63efe3ea",
         ],
         "area_of_interest_1": [
-            "geoblocks.raster.misc.Reclassify",
+            "dask_geomodeling.raster.misc.Reclassify",
             "gemeente_ids",
             nummers + [[50000, 0]],
             True,
         ],
         "endpoint": [
-            "geoblocks.raster.misc.Clip",
+            "dask_geomodeling.raster.misc.Clip",
             "{}".format(input_block),
             "area_of_interest_1",
         ],

@@ -8,8 +8,6 @@ GET CREDENTIALS
 
 import getpass
 
-username = input("Lizard SSO Username:")
-password = getpass.getpass("Lizard SSO Password:")
+USERNAME = input("Lizard SSO Username:")
+PASSWORD = getpass.getpass("Lizard SSO Password:")
 
-USERNAME = username
-PASSWORD = password

@@ -54,7 +54,7 @@ class wrap_atlas:
         self.atlas_api_json = r.json()
         return self.atlas_api_json
 
-    def get_boundaring_polygon(self, atlas_name, name, write=True, epsg=3587):
+    def get_boundaring_polygon(self, atlas_name, name, write=True, epsg=4326):
         r = self.get_json(atlas_name)
         points = r["boundingPolygon"]
 
@@ -66,10 +66,17 @@ class wrap_atlas:
         poly = ogr.Geometry(ogr.wkbPolygon)
         poly.AddGeometry(ring)
 
+        in_srs = ogr.osr.SpatialReference()
+        in_srs.ImportFromEPSG(4326)
         out_srs = ogr.osr.SpatialReference()
         out_srs.ImportFromEPSG(epsg)
-
+        
         poly.AssignSpatialReference(out_srs)
+        
+        trans = ogr.osr.CoordinateTransformation(in_srs, out_srs)
+        
+        poly.Transform(trans)
+        
         poly.FlattenTo2D()
 
         if write:

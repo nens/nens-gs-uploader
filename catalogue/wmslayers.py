@@ -10,8 +10,9 @@ import json
 from requests import get, post, codes, delete
 
 # Local imports
-from catalogue.credentials import username, password
 from catalogue.wrap import wrap_geoserver
+from catalogue.credentials import USERNAME as username
+from catalogue.credentials import PASSWORD as password
 
 # GLOBALS
 LEGEND_OPTIONS = (

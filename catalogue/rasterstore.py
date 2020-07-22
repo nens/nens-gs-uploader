@@ -8,7 +8,9 @@ import json
 import math
 import multiprocessing as mp
 from requests import get, post, codes, delete, put, patch
-from catalogue.credentials import USERNAME, PASSWORD
+from catalogue.credentials import USERNAME as username
+from catalogue.credentials import PASSWORD as password
+
 
 # globals
 CONFIG = {
@@ -26,7 +28,6 @@ CONFIG = {
     "slug": "",
 }
 
-
 class StoreNotFound(Exception):
     pass
 
@@ -37,7 +38,7 @@ class SlugNotFound(Exception):
 
 class rasterstore(object):
     def __init__(
-        self, uuid=None, username=USERNAME, password=PASSWORD, update_slugs=False
+        self, uuid=None, username=username, password=password, 
     ):
 
         self.username = username
@@ -53,9 +54,11 @@ class rasterstore(object):
             self.raster_uuid_url = self.raster_url + self.uuid + "/"
             self.config = self.get_store(self.uuid)
 
-        if update_slugs:
-            path = os.path.dirname(os.path.realpath(__file__))
-            self.slug_dict = load_slug_dict(self.raster_url, self.headers, path)
+        path = os.path.dirname(os.path.realpath(__file__))
+        self.slug_dict = load_slug_dict(self.raster_url, 
+                                        self.headers, 
+                                        path,
+                                        update=False)
 
     def get_call(self, params, url=None, headers=None):
         if not url:
@@ -72,39 +75,75 @@ class rasterstore(object):
         except Exception as e:
             raise StoreNotFound(uuid, e)
 
+    def last_modified_raster_search(self, page, page_size=50):
+        return self.get_call({"ordering": "-last_modified", 
+                      "page": str(page),
+                      "page_size": str(page_size)})
+        
+    def organisation_search(self, page, organisation, page_size=50):
+        return self.get_call({"organisation_uuid":str(organisation),
+                      "page": str(page),
+                      "page_size": str(page_size)})
+    
+    def dataset_search(self, page, dataset, page_size=50):
+        return self.get_call(
+            {"datasets__slug": dataset, "page": str(page), "page_size": str(page_size)}
+        )
+        
     def get_uuid_by_slug(self, slug):
         if "," in slug:
             print("Found", slug.split(","), "as a slug, chose the second")
             slug = slug.split(",")[1]
         return list(self.slug_dict.keys())[list(self.slug_dict.values()).index(slug)]
+    
+    def get_raster_by_dataset(self, dataset_slug, raster_slug, pages=10):
+        for page in range(1, pages + 1):
+            results = self.dataset_search(page, dataset_slug)
+            result = self.match_results_to_slug(results['results'], raster_slug)
+            if result:
+                return result
+            if not results['next']:
+                break
+        
+        return None
+
+    def get_raster_by_slug(
+        self, slug, search="last_modified", organisation=None, max_pages=10
+    ):
+
+        for page in range(1, max_pages + 1):
+            if search == "last_modified":
+                results = self.last_modified_raster_search(page)
+                result = self.match_results_to_slug(results['results'], slug)
+                if result:
+                    return result
+                
+                if not results['next']:
+                    break
+                    
+            elif search == "organisation":
+                results = self.organisation_search(page, organisation, 
+                                                   page_size=1000)
+                result = self.match_results_to_slug(results, slug)
+                if result:
+                    return result
+            else:
+                pass
+
+        return None
+    def match_results_to_slug(self, results, slug):
+        for raster in results:
+            if slug == raster["wms_info"]["layer"]:
+                return raster
+            else:
+                pass
+
+        return None
 
     def get_organisation_uuid(self, organisation):
         r = self.get_call({"name__icontains": organisation}, self.organisation_url,)
         self.organisation_uuid = r.json()["results"][0]["uuid"]
         return r.json()["results"][0]
-
-    def last_modified_raster_search(self, page, page_size=50):
-        return self.get_call(
-            {
-                "ordering": "-last_modified",
-                "page": str(page),
-                "page_size": str(page_size),
-            }
-        )
-
-    def organisation_search(self, page, organisation, page_size=50):
-        return self.get_call(
-            {
-                "organisation_uuid": str(organisation),
-                "page": str(page),
-                "page_size": str(page_size),
-            }
-        )
-
-    def dataset_search(self, page, dataset, page_size=50):
-        return self.get_call(
-            {"datasets__slug": dataset, "page": str(page), "page_size": str(page_size)}
-        )
 
     def get_slug(self, config):
         if "slug" in config:
@@ -122,11 +161,32 @@ class rasterstore(object):
 
     def overwrite_store(self, config):
         """ overwrites store based on uuid if given, else on slug"""
+        
+
+        slug = self.get_slug(config)
         if "uuid" in config:
             self.delete_store(config["uuid"])
             return self.reset_config(config)
+        else:
+            try:
+                uuid = self.get_uuid_by_slug(config['slug']) 
+                self.delete_store(uuid)
+            except Exception as e:
+                pass
+                #print('Error is', e, 'Updating local slug dictionary')
+                
+                # path = os.path.dirname(os.path.realpath(__file__))
+                # self.slug_dict = load_slug_dict(self.raster_url, 
+                #                                 self.headers, 
+                #                                 path,
+                #                                 update=True)
+                
+                # try:
+                #     uuid = self.get_uuid_by_slug(config['slug']) 
+                #     self.delete_store(uuid)
+                # except Exception as e:
+                #     print('Error is', e, 'Still a failure, trying different methods')
 
-        slug = self.get_slug(config)
         if config["datasets"]:
             dataset_available = len(config["datasets"]) > 0
         else:
@@ -226,39 +286,6 @@ class rasterstore(object):
             params={"geom": wkt, "style": style, "limit": 100000},
         )
 
-    def atlas2store(self, atlas_json, supplier, rescalable=False, acces_modifier=0):
-        raster = atlas_json["rasterstore"]
-        atlas = atlas_json["atlas"]
-
-        self.configuration = {
-            "name": atlas["name"],
-            "description": strip_information(atlas["information"]),
-            "supplier": supplier,
-            "supplier_code": raster["name"],
-            "aggregation_type": 2,
-            "options": raster["options"],
-            "access_modifier": acces_modifier,
-            "rescalable": rescalable,
-            "source": raster["source"]
-            #  "source":
-        }
-
-        try:
-            code = raster["observation_type"]["code"]
-
-        except TypeError:
-            code = "-"
-
-        try:
-            org_uuid = raster["organisation"]["uuid"]
-
-        except TypeError:
-            print("Uuid of organisation not filled, using nens")
-            org_uuid = "61f5a464-c350-44c1-9bc7-d4b42d7f58cb"
-
-        self.configuration.update({"observation_type": code})
-        self.configuration.update({"organisation": org_uuid})
-
 
 def mp_slug_search(raster_url, headers, page, pages, page_size):
 
@@ -278,7 +305,6 @@ def mp_slug_search(raster_url, headers, page, pages, page_size):
 def get_call_or(params, url, headers):
     query = {"url": url, "headers": headers, "params": params}
     r = get(**query)
-    print(r.url)
     if r.status_code == 200:
         return r.json()
     else:
@@ -293,22 +319,28 @@ def get_call_or(params, url, headers):
         )
 
 
-def load_slug_dict(raster_url, headers, path):
+def load_slug_dict(raster_url, headers, path, update=True):
 
     slug_dict_path = os.path.join(path, "data/slug_dict.json")
-    if not os.path.exists(slug_dict_path):
+    if not os.path.exists(slug_dict_path) or update:
         print("Did not find slug_dict.json, creating new and starting update")
+        print('Creating file at:', slug_dict_path, 'Patience please...')
 
         r = get_call_or({"page_size": 1}, url=raster_url, headers=headers)
 
         page_size = 100
         pages = math.ceil(r["count"] / page_size)
         args = [(raster_url, headers, p, pages, page_size) for p in range(1, pages)]
-
+        
         slug_dict = {}
-        with mp.Pool(processes=10) as pool:
-            for result_dict in pool.starmap(mp_slug_search, args):
-                slug_dict.update(result_dict)
+        for arg in args:
+            result_dict = mp_slug_search(*arg)
+            slug_dict.update(result_dict)
+            
+        # slug_dict = {}
+        # with mp.Pool(processes=10) as pool:
+        #     for result_dict in pool.starmap(mp_slug_search, args):
+        #         slug_dict.update(result_dict)
 
         with open(slug_dict_path, "w") as fp:
             json.dump(slug_dict, fp)

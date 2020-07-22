@@ -38,7 +38,7 @@ class wrap_geoserver:
     """ Geoserver (gsconfig) wrapper """
 
     def __init__(
-        self, geoserver_name, username=USERNAME, password=PASSWORD, easy=False
+        self, geoserver_name, username=None, password=None, easy=False
     ):
         if geoserver_name in list(REST.keys()):
             self.path = REST[geoserver_name]

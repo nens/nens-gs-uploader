@@ -18,12 +18,11 @@ Stappen:
     
 
 TODO:
-    1. Instructies voor het downloaden
-    
-    4. Downloaden van rasters
-    5. Uploaden naar github
-    6. Tools voor adviseurs
-    7. Jelmer test
+    1. Download all
+    2. Downloaden van rasters
+    3. Uploaden naar github
+    4. Tools voor adviseurs
+    5. Jelmer test
 
 
 FIXES:
@@ -38,7 +37,6 @@ import sys
 
 # Third-party imports
 import argparse
-import getpass
 import ogr
 import gdal
 import logging
@@ -59,11 +57,12 @@ from catalogue.rasterstore import rasterstore
 from catalogue.geoblocks import clip_gemeentes, uuid_store
 
 
+
 # GLOBALS
 # INSTELLINGEN_PATH = (
 #     "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
 # )
-# __file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue.py"
+__file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue.py"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 GEMEENTEN_PATH = os.path.join(
     dir_path, "catalogue", "data", "gemeentes_2019_4326_2.shp"
@@ -96,25 +95,9 @@ class settings_object(object):
     def add(self, key, value):
         setattr(self, key, value)
 
-    def get_postgis_subjects(self):
-        subjects = []
-        for section in self.config.sections()[5:]:
-            for i in self.config.items(section):
-                if i[0] == "out_layer":
-                    subjects.append(i[1])
-
-        return subjects
-
     def set_project(self):
         self.set_values("project")
-        # self.set_values("input_directory")
         self.set_values("tool")
-
-    def set_postgis(self):
-        self.set_values("input_postgis")
-
-    def set_directory(self):
-        self.set_values("input_directory")
 
     def set_values(self, section):
         for key in self.config[section]:
@@ -306,7 +289,7 @@ def delete_excess_raster_info(config):
 
 
 def upload_ready_vectors(
-    upload_dir, clip_geom, organisation, epsg, dataset,
+    upload_dir, clip_geom, organisation, dataset, epsg=3857
 ):
 
     upload_ready_succes = []
@@ -373,10 +356,11 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
 
     wmslayer_failures = []
     wmslayer_succes = []
-    wmslayer = wmslayers()
 
     for meta_path in glob(upload_dir + "/*.json"):
         try:
+            
+            wmslayer = wmslayers()
             meta_data = json.load(open(meta_path))
 
             name = meta_data["atlas"]["name"]
@@ -572,7 +556,8 @@ def create_catalogue(inifile):
         extract_ext_failures,
         extract_rast_failures,
         extract_vect_failures,
-    ) = extract_atlas(setting.atlas_name, setting.wd, setting.download)
+        
+    ) = extract_atlas(setting.atlas_name, setting.wd, setting.download, setting.resolution)
 
     if setting.extract_only:
         return print("Finished extracting data")
@@ -585,7 +570,6 @@ def create_catalogue(inifile):
         upload_dir,
         clip_geom,
         setting.organisatie,
-        epsg=int(setting.epsg),
         dataset=setting.dataset,
     )
 
@@ -600,7 +584,7 @@ def create_catalogue(inifile):
 
     raster_clip_ids = get_clip_id(clip_geom)
     raster_succes, raster_failures = create_atlasstores(
-        "extract_raster", raster_clip_ids, setting, overwrite=False,
+        "extract_raster", raster_clip_ids, setting, overwrite=True, use_nens=setting.use_nens,
     )
     summary(
         vectors,
