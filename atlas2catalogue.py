@@ -62,7 +62,7 @@ from catalogue.geoblocks import clip_gemeentes, uuid_store
 # INSTELLINGEN_PATH = (
 #     "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
 # )
-__file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue.py"
+# __file__ = "C:/Users/chris.kerklaan/tools/atlas2catalogue.py"
 dir_path = os.path.dirname(os.path.realpath(__file__))
 GEMEENTEN_PATH = os.path.join(
     dir_path, "catalogue", "data", "gemeentes_2019_4326_2.shp"
@@ -343,7 +343,7 @@ def upload_ready_vectors(
         if sld_store:
             sld_in = meta_path.replace(".json", ".sld")
             sld_out = os.path.join(upload_dir, vector_name_new + ".sld")
-            copyfile(sld_in, sld_out)
+            #copyfile(sld_in, sld_out)
 
         meta_out = os.path.join(upload_dir, vector_name_new + ".json")
         with open(meta_out, "w") as out_file:
@@ -443,7 +443,8 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
                 "get_feature_info_url": url,
                 "get_feature_info": True,
             }
-
+        
+            #x.append(configuration)
             meta_data["wmslayer"] = wmslayer.create(configuration, overwrite=True)
 
         except Exception as e:
