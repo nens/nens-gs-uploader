@@ -17,6 +17,7 @@ TODOs:
     0. BELANGRIJK: TEST SCHRIJVEN VOOR BASIS FUNCTIONALITEITEN
     3. Output verbeteren
     5. Warning voor het aantal kolommen
+    4. Memory driver wordt niet geupdate, wel als shape als driver wordt gebruikt.
 
     
 NOTES:
@@ -38,28 +39,29 @@ import argparse
 from glob import glob
 
 # Test arguments
-inifile = "C:/Users/chris.kerklaan/tools/instellingen/flevoland/nens_gs_uploader.ini"
+inifile = "C:/Users/chris.kerklaan/tools/instellingen/zevenaar/nens_gs_uploader.ini"
 sys.path.append("C:/Users/chris.kerklaan/tools")
 del sys.path[0]
 
 # Local imports
-from nens_gs_uploader.postgis import (
+from base.postgis import (
     PG_DATABASE,
     copy2pg_database,
     add_metadata_pgdatabase,
+    _clear_connections_database
 )
-from nens_gs_uploader.project import (
+from base.project import (
     logger,
     log_time,
     percentage,
     print_list,
     print_dictionary,
 )
-from nens_gs_uploader.vector import vector_to_geom, wrap_shape
-from nens_gs_uploader.wrap import wrap_geoserver, REST
-from nens_gs_uploader.sld import wrap_sld
-from nens_gs_uploader.wmslayers import wmslayers
-from nens_gs_uploader.postgis import _clear_connections_database
+from base.vector import vector_to_geom
+from base.vector import vector as wrap_shape
+from base.wrap import wrap_geoserver, REST
+from base.sld import wrap_sld
+from base.wmslayers import wmslayers
 
 # Exceptions
 ogr.UseExceptions()
@@ -226,7 +228,7 @@ def add_output_settings(setting, onderwerp, in_path):
         raise ValueError("servernaam fout")
 
     store_name = "{}_{}".format(
-        setting.project_nummer.lower(), PG_DATABASE[setting.server_naam]["database"],
+        setting.project_nummer.lower(), PG_DATABASE[setting.server_naam]["database"]
     )
 
     # abstracts and titles
@@ -504,7 +506,7 @@ def upload(setting):
     if not setting.skip_correction:
         log_time("info", setting.layer_name, "1. vector corrections")
         vector.correct(
-            vector.layer, setting.layer_name, setting.epsg, driver="ESRI Shapefile",
+            vector.layer, setting.layer_name, setting.epsg
         )
         setting.layer_name = vector.layer_name
 
@@ -524,17 +526,19 @@ def upload(setting):
     if not setting.skip_delete_excess_field_names:
         vector = wrap_shape(vector.ds)
         field_names = vector.get_all_field_names()
-        field_names = [f.lower() for f in field_names]
+        field_names_lowered = [f.lower() for f in field_names]
 
         sld = wrap_sld(setting.in_sld_path, _type="path")
         sld.lower_all_property_names()
         sld_fields = sld.get_all_property_names()
-        for field_name in field_names:
-            if field_name not in sld_fields:
-                vector.delete_field(field_name)
-                continue
-            else:
-                log_time("info", f"Keeping '{field_name}' field in vector")
+    
+        if len(sld_fields) > 0:
+            for idx, field_name in enumerate(field_names_lowered):
+                if field_name not in sld_fields:
+                    vector.delete_fields([field_names[idx]])
+                    continue
+                else:
+                    log_time("info", f"Keeping '{field_name}' field in vector")
 
     if not setting.skip_pg_upload:
         log_time("info", setting.layer_name, "2. Upload shape to pg database.")
@@ -546,7 +550,6 @@ def upload(setting):
             pg_details["database"] = setting.database_name
 
         pg_database = wrap_shape(pg_details)
-        # set metadata
         if not setting.product_naam == "flooding" and setting.set_metadata:
             add_metadata_pgdatabase(setting, pg_database)
 
@@ -591,13 +594,12 @@ def upload(setting):
         if setting.use_existing_geoserver_sld:
             log_time("info", setting.layer_name, "6-9. Setting existing sld.")
             server.set_sld_for_layer(
-                workspace_name=None, style_name=setting.existing_sld, use_custom=True,
+                workspace_name=None, style_name=setting.existing_sld, use_custom=True
             )
         else:
             log_time("info", setting.layer_name, "6. Load Style Layer Descriptor.")
 
             sld = wrap_sld(setting.in_sld_path, _type="path")
-
             if not setting.skip_sld_check:
                 log_time("info", setting.layer_name, "7. Check sld.")
 
@@ -608,10 +610,7 @@ def upload(setting):
             log_time("info", setting.layer_name, "8. Upload sld.")
             style_name = setting.layer_name + "_style"
             server.upload_sld(
-                style_name,
-                setting.workspace_name,
-                sld.get_xml(),
-                setting.overwrite_sld,
+                style_name, setting.workspace_name, sld.get_xml(), setting.overwrite_sld
             )
 
             log_time("info", "9. Connect sld to layer.")

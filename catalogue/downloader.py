@@ -6,15 +6,15 @@ from time import sleep
 import logging
 import os
 import requests
-from catalogue.credentials import USERNAME, PASSWORD
+from catalogue.credentials import username, password
 
 LIZARD_URL = "https://demo.lizard.net/api/v3/"
 LIZARD_URL_V4 = "https://demo.lizard.net/api/v4/"
 
 RESULT_LIMIT = 10
 REQUESTS_HEADERS = {}
-REQUESTS_HEADERS["username"] = USERNAME
-REQUESTS_HEADERS["password"] = PASSWORD
+REQUESTS_HEADERS["username"] = username
+REQUESTS_HEADERS["password"] = password
 REQUESTS_HEADERS["Content-Type"] = "application/json"
 
 log = logging.getLogger()
@@ -32,7 +32,7 @@ def get_headers():
     return REQUESTS_HEADERS
 
 
-def set_headers(username=USERNAME, password=PASSWORD):
+def set_headers(username=username, password=password):
     """set Lizard login credentials"""
 
     REQUESTS_HEADERS["username"] = username

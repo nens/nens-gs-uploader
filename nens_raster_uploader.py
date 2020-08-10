@@ -5,10 +5,9 @@ Created on Fri Aug 23 14:20:37 2019
 @author: chris.kerklaan
 TODO:
 
-    1. Goede overwrite functie/patch
+    1. Goede overwrite functie/patch, update slug dictionary
     2. Toevoegen organisatie per raster
-    
-    
+    3. Delete rasterstore
     
 
 """
@@ -26,7 +25,7 @@ import argparse
 from glob import glob
 
 # Local imports
-from nens_raster_uploader.project import (
+from base.project import (
     logger,
     log_time,
     percentage,
@@ -34,10 +33,10 @@ from nens_raster_uploader.project import (
     print_dictionary,
 )
 
-from nens_raster_uploader.rasterstore import rasterstore
+from base.rasterstore import rasterstore
 from nens_raster_uploader.edits import retile
-from nens_raster_uploader.geoblocks import geoblock_clip, uuid_store
-from nens_raster_uploader.raster import wrap_raster
+from base.geoblocks import geoblock_clip, uuid_store
+from base.raster import wrap_raster
 
 # Logging configuration options
 for handler in logging.root.handlers[:]:
@@ -45,7 +44,7 @@ for handler in logging.root.handlers[:]:
 
 _mem_num = 0
 # test files
-inifile = "C:/Users/chris.kerklaan/tools/instellingen/inzicht_in_het_achterland/nens_raster_uploader.ini"
+inifile = "C:/Users/chris.kerklaan/tools/instellingen/zevenaar/nens_raster_uploader.ini"
 # sys.path.append("C:/Users/chris.kerklaan/tools")
 
 
@@ -83,6 +82,7 @@ class settings_object(object):
             self.ini = ini_file
             self.ini_location = os.path.dirname(ini_file)
             self.config = config
+            self.uuid_list = []
 
     def set_project(self):
         self.set_values("project")
@@ -101,49 +101,66 @@ class settings_object(object):
 
             self.key = value
             setattr(self, key, value)
+            
+    def count_uuid_sections(self):
+        sections = self.config.sections()
+        
+        for section in sections:
+            for key in self.config[section]:
+                if 'uuid' == key:
+                    self.uuid_list.append(self.config[section][key])
+                
+        
 
 
 def add_output_settings(setting):
-    file_name = get_file_name_from_path(setting.in_path)
-
-    if file_name.split(".")[1] == "json":
-        setting.json = True
-        setting.json_dict = json.load(open(setting.in_path))
-        setting.store.atlas2store(setting.json_dict, setting.eigen_naam)
-        setting.configuration = setting.store.configuration
-        setting.skip = False
-        setting.onderwerp = setting.json_dict["atlas"]["name"]
-
-    else:
+    if isinstance(setting.in_path, tuple):
+        setting.in_lizard = True        
+        file_name = setting.in_path[1]
         setting.set_values(file_name)
+        
+    else:
+        setting.in_lizard = False
+        file_name = get_file_name_from_path(setting.in_path)
 
-        if setting.project:
-            add_on = "p"
+        if file_name.split(".")[1] == "json":
+            setting.json = True
+            setting.json_dict = json.load(open(setting.in_path))
+            setting.store.atlas2store(setting.json_dict, setting.eigen_naam)
+            setting.configuration = setting.store.configuration
+            setting.skip = False
+            setting.onderwerp = setting.json_dict["atlas"]["name"]
+    
         else:
-            add_on = setting.bo_nummer
+            setting.set_values(file_name)
 
-        in_name = "{}_{}_{}".format(add_on, setting.organisatie, setting.onderwerp)
-        abstract_data = ""
+    if setting.project:
+        add_on = "p"
+    else:
+        add_on = setting.bo_nummer
 
-        styles = {
-            "styles": "{}:{}:{}".format(
-                setting.style, setting.style_min, setting.style_max
-            )
-        }
+    in_name = "{}_{}_{}".format(add_on, setting.organisatie, setting.onderwerp)
+    abstract_data = ""
 
-        configuration = {
-            "name": in_name,
-            "observation_type": setting.observation_type,
-            "description": abstract_data,
-            "supplier": setting.eigen_naam,
-            "supplier_code": in_name,
-            "aggregation_type": 2,
-            "options": styles,
-            "access_modifier": 0,  # public
-            "rescalable": str(setting.rescalable).lower()
-            #  "source":
-        }
-        setting.configuration = configuration
+    styles = {
+        "styles": "{}:{}:{}".format(
+            setting.style, setting.style_min, setting.style_max
+        )
+    }
+
+    configuration = {
+        "name": in_name,
+        "observation_type": setting.observation_type,
+        "description": abstract_data,
+        "supplier": setting.eigen_naam,
+        "supplier_code": in_name,
+        "aggregation_type": 2,
+        "options": styles,
+        "access_modifier": 0,  # public
+        "rescalable": str(setting.rescalable).lower()
+        #  "source":
+    }
+    setting.configuration = configuration
 
     if not setting.organisatie_uuid == "None":
         setting.configuration.update({"organisation": setting.organisatie_uuid})
@@ -159,8 +176,7 @@ def add_output_settings(setting):
     slug = "{}:{}".format(
         setting.organisatie.lower(), setting.configuration["name"].lower()
     )
-    setting.configuration.update({"slug": slug})
-
+    setting.configuration.update({"slug": slug})       
     return setting
 
 
@@ -168,6 +184,7 @@ def batch_upload(inifile):
     """ Returns batch upload shapes for one geoserver """
     setting = settings_object(inifile)
     setting.set_project()
+    setting.count_uuid_sections()
 
     # set logging
     set_log_config(setting.ini_location)
@@ -185,7 +202,10 @@ def batch_upload(inifile):
             present_paths.append(path)
         if file_name in setting.config.sections():
             present_paths.append(path)
-
+            
+    if len(setting.uuid_list) > 0:
+        [present_paths.append(('uuid', uuid)) for uuid in setting.uuid_list]
+        
     setting.store = rasterstore()
     print_list(present_paths, "Paths")
 
@@ -215,35 +235,48 @@ def batch_upload(inifile):
 
 def upload(setting):
     global _mem_num
+
     if setting.clip:
         clip_numbers = json.loads(setting.clip_nummers)
-        geoblock = uuid_store(setting.json_dict["rasterstore"]["uuid"])
+        if setting.in_lizard:
+            geoblock = uuid_store(setting.uuid)
+        else:
+            geoblock = uuid_store(setting.json_dict["rasterstore"]["uuid"])
         graph = geoblock_clip(geoblock, clip_numbers)
         setting.configuration["source"] = {"graph": graph, "name": "endpoint"}
-
-    retile_dir = os.path.dirname(setting.in_path)
-    if setting.correct:
-        raster = wrap_raster(setting.in_path)
-        raster.write(
-            raster.array, f"/vsimem/raster_{_mem_num}.tif", raster.geotransform
-        )
+        
+    if not setting.in_lizard:
         retile_dir = os.path.dirname(setting.in_path)
-        setting.in_path = f"/vsimem/raster_{_mem_num}.tif"
-        _mem_num = _mem_num + 1
-
-    if setting.update_metadata_only:
-        wms = setting.store.put_data(setting.configuration)
-
-    elif setting.update_data_only:
-        for raster_part in retile(setting.in_path, retile_dir):
-            sleep(10)
-            setting.store.post_data(raster_part)
-
+        if setting.correct:
+            retile_dir = os.path.dirname(setting.in_path)
+            raster = wrap_raster(setting.in_path)
+            raster.write(
+                raster.array, f"/vsimem/raster_{_mem_num}.tif",
+                raster.geotransform
+            )
+            retile_dir = os.path.dirname(setting.in_path)
+            setting.in_path = f"/vsimem/raster_{_mem_num}.tif"
+            _mem_num = _mem_num + 1
+    
+        
+        if setting.update_metadata_only:
+            wms = setting.store.update_config(setting.configuration)
+    
+        elif setting.update_data_only:
+            
+            for raster_part in retile(setting.in_path, retile_dir):
+                sleep(10)
+                setting.store.update_data(raster_part)
+    
+        else:
+            setting.store.create(setting.configuration)
+            wms = setting.store.r
+            for raster_part in retile(setting.in_path, retile_dir):
+                setting.store.update_data(raster_part)
     else:
-        wms = setting.store.create(setting.configuration, setting.overwrite)
-        for raster_part in retile(setting.in_path, retile_dir):
-            setting.store.post_data(raster_part)
-    sleep(15)
+        setting.store.create_layer(setting.configuration)
+        wms = setting.store.r
+    # #sleep(15)
 
     return wms
 

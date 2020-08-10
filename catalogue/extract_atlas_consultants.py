@@ -9,9 +9,11 @@ Extract atlas data for consultants
 TODO:
     1. Overwrite functie voor rasterstores -- update slug_dictionary
     2. Extract raw data voor rasters 
-    3. Unique gaat niet goed, check objecten zh klimaatatlas
+    3. Unique gaat niet goed -- filter op slug alleen?, maar wel de juiste laag behouden (incl beschrijving)
     4. Landgebruik verschillende namen
     5. Check legenda
+    
+    
     
 Done:
     1. Added external scripts
@@ -36,15 +38,15 @@ from owslib.wms import WebMapService
 from slugify import slugify
 
 # Local imports
-from catalogue.project import log_time, mk_dir
-from catalogue.wrap import SERVERS, wrap_geoserver
-from catalogue.vector import vector as vector_wrap, POLYGON
-from catalogue.sld import wrap_sld
+from base.project import log_time, mk_dir
+from base.wrap import SERVERS, wrap_geoserver
+from base.vector import vector as vector_wrap, POLYGON
+from base.sld import wrap_sld
 from catalogue.klimaatatlas import wrap_atlas
-from catalogue.rasterstore import rasterstore
-from catalogue.geoblocks import clip_gemeentes
-from catalogue.rasterstore import StoreNotFound
-from catalogue.downloader import download_lizard_raster, set_headers
+from base.rasterstore import rasterstore
+from base.geoblocks import clip_gemeentes
+from base.rasterstore import StoreNotFound
+#from base.downloader import download_lizard_raster, set_headers
 
 # Exceptions
 class MissingSLD(Exception):
@@ -69,7 +71,7 @@ def unique(data):
     for key, value in data.items():
         name_list = []        
         for layer in value:
-            unique_name = "{}_{}".format(
+            unique_name = "{}".format(
                 slugify(layer['name']), 
                 slugify(layer['slug']))
             if unique_name not in name_list:
@@ -113,6 +115,7 @@ def get_atlas_data(atlas_name):
     data = {"vector": [], "raster": [], "external": []}
 
     for layer in atlas.get_layer_list(atlas_name):
+        
         if ":" in layer["layerName"]:
             layer["layername"] = layer["layerName"].split(":")[-1]
         else:
@@ -308,24 +311,24 @@ def extract_vectors(vectors, temp_dir, organisation, clip_geom, download=False, 
                 continue
 
 
-            # if not wms_in_extent(vector, bbox_geom) or download:
-            #     log_time(
-            #         "info",
-            #         "Wms layer bbox outside area, retrieving raw data"
-            #         " or download = True",
-            #     )
-            #     download_vector(
-            #         vector, temp_dir, meta_path.replace(".json", ".geojson"), *bbox,
-            #     )
+            if not wms_in_extent(vector, bbox_geom) or download:
+                log_time(
+                    "info",
+                    "Wms layer bbox outside area, retrieving raw data"
+                    " or download = True",
+                )
+                download_vector(
+                    vector, temp_dir, meta_path.replace(".json", ".geojson"), *bbox,
+                )
 
-            #     retrieve_sld(vector, gs_dict, meta_path.replace(".json", ".sld"))
+                retrieve_sld(vector, gs_dict, meta_path.replace(".json", ".sld"))
 
                 # log_time("info",'Checking feature count outside geometry')
                 # count = feature_count_outside_geometry(meta_path.replace(
-                #                                                  ".json",
-                #                                                  ".shp"),
+                #                                                   ".json",
+                #                                                   ".shp"),
                 #                                                   clip_geom)
-                # if count > 0:
+                #if count > 0:
                 if bound_error:    
                     raise VectorOutsideArea(f"Outside atlas area")
 
@@ -376,6 +379,7 @@ def extract_rasters(rasters, temp_dir, atlas_name, download=False, resolution=10
     # Start raster changes
     for raster in rasters:
         log_time("info", "Processing raster:", raster["name"])
+        log_time("info", "Unique name:", raster["unique_name"])
 
         json_dict = {}
         subject = "_".join(raster["name"].lower().split(" "))
@@ -391,36 +395,36 @@ def extract_rasters(rasters, temp_dir, atlas_name, download=False, resolution=10
             uuid = store.get_uuid_by_slug(raster["slug"])
             config = store.get_store(uuid)
             
-            if download:
-                    e = clip_geom.GetEnvelope()
-                    nl = clip_geom_nl.GetEnvelope()
-                    bounds = {"west": e[0],
-                              "east": e[1],
-                              "north": e[3],
-                              "south": e[2]}
+            #if download:
+                    # e = clip_geom.GetEnvelope()
+                    # nl = clip_geom_nl.GetEnvelope()
+                    # bounds = {"west": e[0],
+                    #           "east": e[1],
+                    #           "north": e[3],
+                    #           "south": e[2]}
                     
                     
-                    width = int((nl[1] - nl[0])/ resolution)
-                    height = int((nl[3] - nl[2]) / resolution) 
+                    # width = int((nl[1] - nl[0])/ resolution)
+                    # height = int((nl[3] - nl[2]) / resolution) 
                     
-                    while (width * height) > 1000000000:
-                        resolution = resolution + 0.5
-                        log_time('warning',
-                                 'maximum download support is 1000000000')
-                        log_time('Waring',
-                                 f'Lowering resolution to {resolution}')
-                        width = int((nl[1] - nl[0])/ resolution)
-                        height = int((nl[3] - nl[2]) / resolution)                        
+                    # while (width * height) > 1000000000:
+                    #     resolution = resolution + 0.5
+                    #     log_time('warning',
+                    #              'maximum download support is 1000000000')
+                    #     log_time('Waring',
+                    #              f'Lowering resolution to {resolution}')
+                    #     width = int((nl[1] - nl[0])/ resolution)
+                    #     height = int((nl[3] - nl[2]) / resolution)                        
                         
-                    pathname = os.path.join(temp_dir, 
-                                            meta_path.replace(".json",
-                                                              ".tif"))
-                    download_lizard_raster(uuid, 
-                                           "EPSG:28992",
-                                           bounds=bounds, 
-                                           width=width,
-                                           height=height,
-                                           pathname=pathname)
+                    # pathname = os.path.join(temp_dir, 
+                    #                         meta_path.replace(".json",
+                    #                                           ".tif"))
+                    # download_lizard_raster(uuid, 
+                    #                        "EPSG:28992",
+                    #                        bounds=bounds, 
+                    #                        width=width,
+                    #                        height=height,
+                    #                        pathname=pathname)
 
         except ValueError as e:
             raster["error"] = "Does this store exist? {} {}".format(raster["slug"], e)
@@ -481,9 +485,9 @@ def extract_atlas(atlas_name, wd, download, resolution=10):
 
     os.chdir(wd)
 
-    vector_dir = mk_dir(wd, folder_name="extract_vector")
-    raster_dir = mk_dir(wd, folder_name="extract_raster")
-    external_dir = mk_dir(wd, folder_name="extract_external")
+    vector_dir = mk_dir("extract_vector",path=wd)
+    raster_dir = mk_dir("extract_raster",path=wd)
+    external_dir = mk_dir("extract_external",path=wd)
 
     data = get_atlas_data(atlas_name)
     unique_data = unique(data)

@@ -50,11 +50,11 @@ from configparser import RawConfigParser
 # Local imports
 from catalogue.extract_atlas_consultants import extract_atlas
 from catalogue.klimaatatlas import wrap_atlas
-from catalogue.vector import vector as vector_wrap
-from catalogue.project import logger, log_time, mk_dir
-from catalogue.wmslayers import wmslayers
-from catalogue.rasterstore import rasterstore
-from catalogue.geoblocks import clip_gemeentes, uuid_store
+from base.vector import vector as vector_wrap
+from base.project import logger, log_time, mk_dir
+from base.wmslayers import wmslayers
+from base.rasterstore import rasterstore
+from base.geoblocks import clip_gemeentes, uuid_store
 
 
 
@@ -177,7 +177,7 @@ def summary(
 
     log_time(
         "info",
-        "summary" "Upload to rasterstore failures {}".format(len(rasterstore_failures)),
+        "summary","Upload to rasterstore failures {}".format(len(rasterstore_failures)),
     )
     for raster in rasterstore_failures:
         print("\t{}:{}".format(raster["rasterstore"]["name"], raster["error"]))
@@ -444,7 +444,6 @@ def create_wmslayers(upload_dir, setting, bounds, use_nens=False):
                 "get_feature_info": True,
             }
         
-            #x.append(configuration)
             meta_data["wmslayer"] = wmslayer.create(configuration, overwrite=True)
 
         except Exception as e:

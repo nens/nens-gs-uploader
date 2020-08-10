@@ -1,5 +1,1 @@
-GDAL: GDALOpen(C:\Users\chris.kerklaan\Documents\Projecten\catalogus_cursus\extract_vector\begaanbaarheid_wegen_landelijk.shp, this=00000204F6A32FC0) succeeds as ESRI Shapefile.
-CPLError: Unable to open EPSG support file gcs.csv.  Try setting the GDAL_DATA environment variable to point to the directory containing EPSG csv files.
-OSR: Building PROJCS cache
-GDAL: GDALClose(C:\Users\chris.kerklaan\Documents\Projecten\catalogus_cursus\extract_vector\begaanbaarheid_wegen_landelijk.shp, this=00000204F6A32FC0)
 GDAL: In GDALDestroy - unloading GDAL shared library.
