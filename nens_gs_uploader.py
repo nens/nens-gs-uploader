@@ -39,29 +39,30 @@ import argparse
 from glob import glob
 
 # Test arguments
-inifile = "C:/Users/chris.kerklaan/tools/instellingen/zevenaar/nens_gs_uploader.ini"
-sys.path.append("C:/Users/chris.kerklaan/tools")
-del sys.path[0]
+#inifile = "C:/Users/chris.kerklaan/tools/instellingen/zevenaar/nens_gs_uploader.ini"
+#sys.path.append("C:/Users/chris.kerklaan/tools")
+#del sys.path[0]
+
 
 # Local imports
-from base.postgis import (
+from core.postgis import (
     PG_DATABASE,
     copy2pg_database,
     add_metadata_pgdatabase,
     _clear_connections_database
 )
-from base.project import (
+from core.project import (
     logger,
     log_time,
     percentage,
     print_list,
     print_dictionary,
 )
-from base.vector import vector_to_geom
-from base.vector import vector as wrap_shape
-from base.wrap import wrap_geoserver, REST
-from base.sld import wrap_sld
-from base.wmslayers import wmslayers
+from core.vector import vector_to_geom
+from core.vector import vector as wrap_shape
+from core.wrap import wrap_geoserver, REST
+from core.sld import wrap_sld
+from core.wmslayers import wmslayers
 
 # Exceptions
 ogr.UseExceptions()
@@ -616,13 +617,13 @@ def upload(setting):
             log_time("info", "9. Connect sld to layer.")
             server.set_sld_for_layer()
 
-        log_time("info", setting.layer_name, "10. Add to abstract.")
-        if setting.overwrite_abstract:
-            server.write_abstract(setting.abstract_data)
+        # log_time("info", setting.layer_name, "10. Add to abstract.")
+        # if setting.overwrite_abstract:
+        #     server.write_abstract(setting.abstract_data)
 
-        log_time("info", setting.layer_name, "11. Add to title.")
-        if setting.overwrite_title:
-            server.write_title(setting.title_data)
+        # log_time("info", setting.layer_name, "11. Add to title.")
+        # if setting.overwrite_title:
+        #     server.write_title(setting.title_data)
 
     if not setting.skip_lizard_wms_layer:
         log_time("info", setting.layer_name, "12. Add wms layer.")
@@ -634,7 +635,7 @@ def upload(setting):
                 setting.wms_url, setting.slug
             )
             setting.wmslayer.configuration["download_url"] = download_url
-            setting.wmslayer.configuration["slug"] = setting.slug
+            setting.wmslayer.configuration["slug"] = setting.slug[:64]
 
         else:
             gs_wms_server = wrap_geoserver(setting.wmsserver)
@@ -655,4 +656,7 @@ def upload(setting):
 
 
 if __name__ == "__main__":
-    batch_upload(**vars(get_parser().parse_args()))
+    #batch_upload(**vars(get_parser().parse_args()))
+    print(sys.argv[-1])
+    inifile=sys.argv[-1]
+    batch_upload(inifile)

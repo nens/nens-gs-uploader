@@ -129,10 +129,7 @@ class Catalog:
         """
         rest_url = config_object.href
         params = {"purge": purge, "recurse": recurse}
-        headers = {
-            "Content-type": "application/xml",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": "application/xml", "Accept": "application/xml"}
         r = self.session.delete(rest_url, params=params, headers=headers)
         if r.status_code == requests.codes.ok:
             return r.text
@@ -203,10 +200,7 @@ class Catalog:
         message = obj.message()
         save_method = obj.save_method
         LOGGER.debug("{} {}".format(save_method, rest_url))
-        methods = {
-            settings.POST: self.session.post,
-            settings.PUT: self.session.put,
-        }
+        methods = {settings.POST: self.session.post, settings.PUT: self.session.put}
         headers = {"Content-type": content_type, "Accept": content_type}
         r = methods[save_method](rest_url, data=message, headers=headers)
         self._cache.clear()
@@ -346,10 +340,7 @@ class Catalog:
             params["update"] = "overwrite"
         if charset is not None:
             params["charset"] = charset
-        headers = {
-            "Content-Type": "application/zip",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-Type": "application/zip", "Accept": "application/xml"}
         upload_url = urljoin(
             self.service_url,
             "workspaces/{}/datastores/{}/file.shp".format(workspace, store),
@@ -394,10 +385,7 @@ class Catalog:
             "workspaces/{}/datastores/{}/file.shp".format(workspace, name),
         )
         # PUT /workspaces/<ws>/datastores/<ds>/file.shp
-        headers = {
-            "Content-type": "application/zip",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
         if isinstance(data, dict):
             LOGGER.debug("Data is NOT a zipfile")
             archive = prepare_upload_bundle(name, data)
@@ -415,7 +403,7 @@ class Catalog:
             os.unlink(archive)
 
     def create_imagemosaic(
-        self, name, data, configure=None, workspace=None, overwrite=False, charset=None,
+        self, name, data, configure=None, workspace=None, overwrite=False, charset=None
     ):
         if not overwrite:
             try:
@@ -441,10 +429,7 @@ class Catalog:
             "workspaces/{}/coveragestores/{}/file.imagemosaic".format(workspace, name),
         )
         # PUT /workspaces/<ws>/coveragestores/<name>/file.imagemosaic?configure=none
-        headers = {
-            "Content-type": "application/zip",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
         if isinstance(data, str):
             message = open(data, "rb")
         else:
@@ -558,10 +543,7 @@ class Catalog:
             ),
         )
         # POST /workspaces/<ws>/coveragestores/<name>/file.imagemosaic
-        headers = {
-            "Content-type": "application/zip",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": "application/zip", "Accept": "application/xml"}
         message = open(data, "rb")
         try:
             r = self.session.post(cs_url, data=message, headers=headers, params=params)
@@ -584,10 +566,7 @@ class Catalog:
             ),
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages.json
-        headers = {
-            "Content-type": "application/json",
-            "Accept": "application/json",
-        }
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         coverages = json.loads(r.text, object_hook=_decode_dict)
@@ -605,10 +584,7 @@ class Catalog:
             ),
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index.json
-        headers = {
-            "Content-type": "application/json",
-            "Accept": "application/json",
-        }
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         schema = json.loads(r.text, object_hook=_decode_dict)
@@ -627,13 +603,10 @@ class Catalog:
             params["offset"] = offset
         p = "workspaces/{}/coveragestores/{}/coverages/{}/index/granules.json"
         cs_url = urljoin(
-            self.service_url, p.format(store.workspace.name, store.name, coverage),
+            self.service_url, p.format(store.workspace.name, store.name, coverage)
         )
         # GET /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index/granules.json
-        headers = {
-            "Content-type": "application/json",
-            "Accept": "application/json",
-        }
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         r = self.session.get(cs_url, headers=headers, params=params)
         self._cache.clear()
         granules = json.loads(r.text, object_hook=_decode_dict)
@@ -650,10 +623,7 @@ class Catalog:
             p.format(store.workspace, store.name, coverage, granule_id),
         )
         # DELETE /workspaces/<ws>/coveragestores/<name>/coverages/<coverage>/index/granules/<granule_id>.json
-        headers = {
-            "Content-type": "application/json",
-            "Accept": "application/json",
-        }
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         r = self.session.delete(cs_url, headers=headers, params=params)
         self._cache.clear()
         if r.status_code != 200:
@@ -687,10 +657,7 @@ class Catalog:
             feature_type.native_bbox = native_bbox
         feature_type.enabled = True
         feature_type.title = name
-        headers = {
-            "Content-type": "application/xml",
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": "application/xml", "Accept": "application/xml"}
         params = dict()
         resource_url = store.resource_url
         if jdbc_virtual_table is not None:
@@ -704,7 +671,7 @@ class Catalog:
             )
         # What is the use of this request?
         r = self.session.post(
-            resource_url, data=feature_type.message(), headers=headers, params=params,
+            resource_url, data=feature_type.message(), headers=headers, params=params
         )
         if r.status_code < 200 or r.status_code > 299:
             raise UploadError(r.text)
@@ -881,20 +848,14 @@ class Catalog:
             msg = "There is already a style named {}".format(name)
             raise ConflictingDataError(msg)
         if not overwrite or style is None:
-            headers = {
-                "Content-type": "application/xml",
-                "Accept": "application/xml",
-            }
+            headers = {"Content-type": "application/xml", "Accept": "application/xml"}
             xml = "<style><name>{0}</name><filename>{0}.sld" + "</filename></style>"
             xml = xml.format(name)
             style = Style(self, name, workspace, style_format)
             r = self.session.post(style.create_href, data=xml, headers=headers)
             if r.status_code < 200 or r.status_code > 299:
                 raise UploadError(r.text)
-        headers = {
-            "Content-type": style.content_type,
-            "Accept": "application/xml",
-        }
+        headers = {"Content-type": style.content_type, "Accept": "application/xml"}
         body_href = style.body_href
         if raw:
             body_href += "?raw=true"

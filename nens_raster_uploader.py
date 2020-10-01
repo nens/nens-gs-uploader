@@ -25,7 +25,7 @@ import argparse
 from glob import glob
 
 # Local imports
-from base.project import (
+from core.project import (
     logger,
     log_time,
     percentage,
@@ -33,10 +33,10 @@ from base.project import (
     print_dictionary,
 )
 
-from base.rasterstore import rasterstore
+from core.rasterstore import rasterstore
 from nens_raster_uploader.edits import retile
-from base.geoblocks import geoblock_clip, uuid_store
-from base.raster import wrap_raster
+from core.geoblocks import geoblock_clip, uuid_store
+from core.raster import wrap_raster
 
 # Logging configuration options
 for handler in logging.root.handlers[:]:
@@ -44,7 +44,7 @@ for handler in logging.root.handlers[:]:
 
 _mem_num = 0
 # test files
-inifile = "C:/Users/chris.kerklaan/tools/instellingen/zevenaar/nens_raster_uploader.ini"
+inifile = "C:/Users/chris.kerklaan/tools/instellingen/rotterdam/nens_raster_uploader.ini"
 # sys.path.append("C:/Users/chris.kerklaan/tools")
 
 
@@ -189,8 +189,10 @@ def batch_upload(inifile):
     # set logging
     set_log_config(setting.ini_location)
     sys.stdout = logger(setting.ini_location)
+    print(setting.directory)
 
     in_paths = glob(setting.directory + "/*.tif")
+    print(in_paths)
     in_paths = in_paths + glob(setting.directory + "/*.vrt")
     in_paths = in_paths + glob(setting.directory + "/*.asc")
     in_paths = in_paths + glob(setting.directory + "/*.json")

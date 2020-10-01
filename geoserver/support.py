@@ -340,7 +340,7 @@ class JDBCVirtualTableParam(object):
 
 class JDBCVirtualTable(object):
     def __init__(
-        self, _name, _sql, _escapeSql, _geometry, _keyColumn=None, _parameters=None,
+        self, _name, _sql, _escapeSql, _geometry, _keyColumn=None, _parameters=None
     ):
         self.name = _name
         self.sql = _sql

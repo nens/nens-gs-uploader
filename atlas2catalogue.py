@@ -50,11 +50,11 @@ from configparser import RawConfigParser
 # Local imports
 from catalogue.extract_atlas_consultants import extract_atlas
 from catalogue.klimaatatlas import wrap_atlas
-from base.vector import vector as vector_wrap
-from base.project import logger, log_time, mk_dir
-from base.wmslayers import wmslayers
-from base.rasterstore import rasterstore
-from base.geoblocks import clip_gemeentes, uuid_store
+from core.vector import vector as vector_wrap
+from core.project import logger, log_time, mk_dir
+from core.wmslayers import wmslayers
+from core.rasterstore import rasterstore
+from core.geoblocks import clip_gemeentes, uuid_store
 
 
 
@@ -279,7 +279,6 @@ def delete_excess_raster_info(config):
         "rescalable",
         "interval",
         "temporal",
-        "url",
         "shared_with",
         "datasets",
     ]

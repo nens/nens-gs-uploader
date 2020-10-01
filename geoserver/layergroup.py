@@ -2,13 +2,7 @@
 
 from urllib.parse import urljoin
 
-from geoserver.support import (
-    ResourceInfo,
-    write_string,
-    write_bbox,
-    xml_property,
-    bbox,
-)
+from geoserver.support import ResourceInfo, write_string, write_bbox, xml_property, bbox
 from geoserver import settings
 
 
@@ -132,7 +126,7 @@ class UnsavedLayerGroup(LayerGroup):
         if bounds is None:
             bounds = ("-180", "180", "-90", "90", "EPSG:4326")
         self.dirty.update(
-            name=name, layers=layers, styles=styles, bounds=bounds, workspace=workspace,
+            name=name, layers=layers, styles=styles, bounds=bounds, workspace=workspace
         )
 
     @property
@@ -142,5 +136,5 @@ class UnsavedLayerGroup(LayerGroup):
             workspace_name = getattr(self.workspace, "name", self.workspace)
             path_parts = "workspaces/{}/{}".format(workspace_name, path_parts)
         return urljoin(
-            self.catalog.service_url, "{}?name={}".format(path_parts, self.name),
+            self.catalog.service_url, "{}?name={}".format(path_parts, self.name)
         )

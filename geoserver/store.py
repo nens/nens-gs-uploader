@@ -269,7 +269,7 @@ class UnsavedWmsStore(WmsStore):
     def __init__(self, catalog, name, workspace):
         super(UnsavedWmsStore, self).__init__(catalog, workspace, name)
         self.dirty.update(
-            {"name": name, "enabled": True, "capabilitiesURL": "", "type": "WMS",}
+            {"name": name, "enabled": True, "capabilitiesURL": "", "type": "WMS"}
         )
 
     @property

@@ -38,14 +38,14 @@ from owslib.wms import WebMapService
 from slugify import slugify
 
 # Local imports
-from base.project import log_time, mk_dir
-from base.wrap import SERVERS, wrap_geoserver
-from base.vector import vector as vector_wrap, POLYGON
-from base.sld import wrap_sld
+from core.project import log_time, mk_dir
+from core.wrap import SERVERS, wrap_geoserver
+from core.vector import vector as vector_wrap, POLYGON
+from core.sld import wrap_sld
 from catalogue.klimaatatlas import wrap_atlas
-from base.rasterstore import rasterstore
-from base.geoblocks import clip_gemeentes
-from base.rasterstore import StoreNotFound
+from core.rasterstore import rasterstore
+from core.geoblocks import clip_gemeentes
+from core.rasterstore import StoreNotFound
 #from base.downloader import download_lizard_raster, set_headers
 
 # Exceptions
@@ -493,7 +493,10 @@ def extract_atlas(atlas_name, wd, download, resolution=10):
     unique_data = unique(data)
     vectors = unique_data["vector"]
     rasters = unique_data["raster"]
-    externals = unique_data["external"]
+    if "external" in unique_data.keys():
+        externals = unique_data["external"]
+    else:
+        externals = [0]
 
     log_time("info", "Raster directory:", raster_dir)
     log_time("info", "Vector directory:", vector_dir)
