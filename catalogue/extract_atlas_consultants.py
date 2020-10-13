@@ -9,17 +9,16 @@ Extract atlas data for consultants
 TODO:
     1. Overwrite functie voor rasterstores -- update slug_dictionary
     2. Extract raw data voor rasters 
-    3. Unique gaat niet goed -- filter op slug alleen?, maar wel de juiste laag behouden (incl beschrijving)
-    4. Landgebruik verschillende namen
     5. Check legenda
-    
+        
     
     
 Done:
     1. Added external scripts
     2. Add log_time
     3. Cleaned scripts
-
+    4. Bug fix for no external wms data
+    
 """
 
 # System imports
@@ -496,7 +495,7 @@ def extract_atlas(atlas_name, wd, download, resolution=10):
     if "external" in unique_data.keys():
         externals = unique_data["external"]
     else:
-        externals = [0]
+        externals = None
 
     log_time("info", "Raster directory:", raster_dir)
     log_time("info", "Vector directory:", vector_dir)
@@ -504,8 +503,11 @@ def extract_atlas(atlas_name, wd, download, resolution=10):
 
     log_time("info", "Amount of vectors: {}".format(len(vectors)))
     log_time("info", "Amount of rasters: {}".format(len(rasters)))
-    log_time("info", "Amount of external wms: {}".format(len(externals)))
-
+    if externals:
+        log_time("info", "Amount of external wms: {}".format(len(externals)))
+    else:
+        log_time("info", "Found no external wms")
+        
     atlas = wrap_atlas(atlas_name)
     clip_geom = atlas.get_boundaring_polygon(atlas_name, "boundary", write = False)
     clip_geom_nl =  atlas.get_boundaring_polygon(atlas_name, "boundary", 
@@ -518,9 +520,12 @@ def extract_atlas(atlas_name, wd, download, resolution=10):
     extract_raster_succes, extract_raster_failures = extract_rasters(
         rasters, raster_dir, atlas_name, False, resolution, clip_geom, clip_geom_nl
     )
-    extract_ext_succes, exteract_ext_failures = extract_external(
-        externals, external_dir
-    )
+    if externals:
+        extract_ext_succes, exteract_ext_failures = extract_external(
+            externals, external_dir
+        )
+    else:
+        exteract_ext_failures = None
 
     return (
         vectors,

@@ -182,10 +182,12 @@ def summary(
     for raster in rasterstore_failures:
         print("\t{}:{}".format(raster["rasterstore"]["name"], raster["error"]))
 
-    log_time("info", "summary", "External wmslayers in atlas {}".format(len(externals)))
-    for external in externals_failures:
-        print("\t" + external["atlas"]["name"])
-
+    if externals:
+        log_time("info", "summary", "External wmslayers in atlas {}".format(len(externals)))
+        for external in externals_failures:
+            print("\t" + external["atlas"]["name"])
+    else:
+        print('No externals')
 
 def get_subject_from_name(name, organisation):
     relevant = []
