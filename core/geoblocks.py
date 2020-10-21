@@ -24,11 +24,19 @@ def clip_gemeentes(input_block, gemeentes):
             nummers + [[50000, 0]],
             True,
         ],
+        'store_snapped':
+            [
+                "dask_geomodeling.raster.temporal.Snap",
+                "{}".format(input_block),
+                "area_of_interest_1"
+            ],
+        
         "endpoint": [
             "dask_geomodeling.raster.misc.Clip",
-            "{}".format(input_block),
+            'store_snapped',
             "area_of_interest_1",
         ],
+        
     }
 
     return clip_block

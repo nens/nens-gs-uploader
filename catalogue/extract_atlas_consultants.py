@@ -10,7 +10,8 @@ TODO:
     1. Overwrite functie voor rasterstores -- update slug_dictionary
     2. Extract raw data voor rasters 
     5. Check legenda
-        
+    6. Slugify werkt niet voor iedereen. --
+
     
     
 Done:
@@ -34,7 +35,7 @@ from tqdm import tqdm
 
 from urllib.request import urlretrieve
 from owslib.wms import WebMapService
-from slugify import slugify
+#from slugify import slugify
 
 # Local imports
 from core.project import log_time, mk_dir
@@ -63,6 +64,8 @@ class VectorOutsideArea(Exception):
 def has_numbers(string):
     return any(char.isdigit() for char in string)
 
+def slugify(name):
+    return name.lower().replace(' ','-').replace('(','').replace(')',''), 
 
 def unique(data):
     """ Filters the data on name, slug and add a unique name"""

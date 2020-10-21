@@ -59,6 +59,8 @@ from core.geoblocks import clip_gemeentes, uuid_store
 
 
 
+
+
 # GLOBALS
 # INSTELLINGEN_PATH = (
 #     "C:/Users/chris.kerklaan/tools/atlas2catalogue/instellingen"
@@ -541,7 +543,7 @@ def create_atlasstores(
 
         # add slug for search
         config["slug"] = slug
-
+        
         # create stores
         try:
             store.create_layer(config)
