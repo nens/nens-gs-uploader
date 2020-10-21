@@ -47,6 +47,7 @@ from shutil import copyfile
 from configparser import RawConfigParser
 
 
+# sys.path.append('C:/Users/chris.kerklaan/tools')
 # Local imports
 from catalogue.extract_atlas_consultants import extract_atlas
 from catalogue.klimaatatlas import wrap_atlas
@@ -207,11 +208,27 @@ def get_clip_id(geom):
     ds = ogr.Open(GEMEENTEN_PATH)
     layer = ds[0]
     layer.SetSpatialFilter(geom)
+    
+    buffered = geom.Buffer(-0.0001)
 
     gemeenten_ids = []
+    gemeenten_areas = []
+    layer.ResetReading()
     for feature in layer:
-        if feature.geometry().PointOnSurface().Intersects(geom):
+        if feature.geometry().PointOnSurface().Intersects(buffered):
             gemeenten_ids.append(feature["id"])
+    if len(gemeenten_ids) == 0:
+        layer.ResetReading()
+        for feature in layer:
+            if feature.geometry().Intersects(buffered):
+
+                intersect = feature.geometry().Intersection(buffered)
+                gemeenten_ids.append(feature["id"])
+                gemeenten_areas.append(intersect.GetArea())
+    
+        # # returns only one
+        # gemeenten_ids = gemeenten_ids[gemeenten_areas.index(max(gemeenten_areas))]
+    
     ds = None
 
     return gemeenten_ids
@@ -527,7 +544,7 @@ def create_atlasstores(
 
         # create stores
         try:
-            store.create(config, overwrite=overwrite)
+            store.create_layer(config)
 
         except Exception as e:
             raster["error"] = e
