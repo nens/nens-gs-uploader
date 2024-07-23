@@ -236,6 +236,51 @@ def layers_from_atlas_to_lizard(atlas_name,supplier,layer_collection_name,organi
             raster_to_layer_collection(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer_name, failed_layers,maplayer_display_name)  
     return failed_layers
 
+def missing_wms(atlas_name,supplier,layer_collection_name,organisation_uuid,wms_missing,wms_configured,wms_not_in_layer_collection):
+    #Find Atlas UUID
+    query_atlas =f"/?domain__contains={atlas_name}" 
+    atlas_api = f"https://{atlas_name}.klimaatatlas.net/api/atlases" + query_atlas
+    r = requests.get(atlas_api)
+    atlas_api_json = r.json()
+    atlas_uuid = atlas_api_json["results"][0]["uuid"]
+
+    #Find map layers with that uuid (opletten: werkt wanneer er minder dan 100 lagen in de atlas zitten)
+    query_maplayers = f"/?atlas={atlas_uuid}" 
+    maplayers_api = f"https://{atlas_name}.klimaatatlas.net/api/maplayers" + query_maplayers
+    r = requests.get(maplayers_api)
+    maplayers_api_json = r.json()
+    maplayer_list = maplayers_api_json["results"]
+    layer_collection_url = "https://nens.lizard.net/api/v4/layercollections/"
+
+    for j in range(0,np.size(maplayer_list)):
+        maplayer = maplayer_list[j]
+        maplayer_url = maplayer["layer_url"]
+        maplayer_name = maplayer["wms_layer_name"]
+        if "geoserver" in maplayer_url:
+            wms_url = "https://nens.lizard.net/api/v4/wmslayers/"
+            query = f"?slug={maplayer_name}"
+            get_url = wms_url + query
+            y = requests.get(url=get_url,headers=json_headers)
+            result = y.json()
+            if not result["results"]:
+                print(f"The wms-layer {maplayer_name} does not exist yet!")
+                wms_missing.append(maplayer_name)
+                #maplayer_test = maplayer #evt. met de functie 'vector_to_wms' handmatig configureren
+                #vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer)  
+            else: 
+                print(f"The wms-layer {maplayer_name} already exists")
+                correct_layer_collection = 0
+                for x in result["results"]:
+                    layer_collection_name = x["layer_collections"][0]["slug"]
+                    if layer_collection_name == settings.layer_collection:
+                        correct_layer_collection = 1
+                        print("Exists and correct layer collection!")
+                        wms_configured.append(maplayer_name)
+                if correct_layer_collection == 0:
+                    print("Exists but wrong layer collection")
+                    wms_not_in_layer_collection.append(maplayer_name)
+                    #vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer)
+
 #SCRIPT
 os.chdir(os.path.dirname(__file__))    
 settings = settings_object("atlas2catalogue_v2.ini")
@@ -249,6 +294,13 @@ json_headers = {
 failed_layers = []
 make_new_layer_collection()
 layers_from_atlas_to_lizard(settings.atlas_name,settings.supplier,settings.layer_collection,settings.organisation_uuid,failed_layers)
+
+#missende WMS-lagen opsporen
+wms_missing =[]
+wms_configured=[]
+wms_not_in_layer_collection=[]                
+missing_wms(settings.atlas_name,settings.supplier,settings.layer_collection,settings.organisation_uuid,wms_missing,wms_configured,wms_not_in_layer_collection)        
+  
 
 """
 #DELETE WMS LAGEN wanneer ze opnieuw geconfigureerd moeten worden
