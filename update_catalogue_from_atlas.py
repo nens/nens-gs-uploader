@@ -286,18 +286,22 @@ def compare_atlas_and_lc(list_atlas,list_lc,raster):
     
     for i in range(0,np.size(list_atlas)):
         #print(list_atlas[i]["wms_layer_name"])
-        if ":" in list_atlas[i]["wms_layer_name"]:
-            atlas_slug = list_atlas[i]["wms_layer_name"].split(":",1)[1]
-        else: 
-            atlas_slug = list_atlas[i]["wms_layer_name"]
-        found = False
-        for j in range(0,np.size(list_lc)):
-            if raster:
-                slug_lc = list_lc[j]["wms_info"]["layer"]
-            else:
-                slug_lc = list_lc[j]["slug"]
-            if atlas_slug in slug_lc:
-                found = True
+        try:
+            if ":" in list_atlas[i]["wms_layer_name"]:
+                atlas_slug = list_atlas[i]["wms_layer_name"].split(":",1)[1]
+            else: 
+                atlas_slug = list_atlas[i]["wms_layer_name"]
+            found = False
+            for j in range(0,np.size(list_lc)):
+                if raster:
+                    slug_lc = list_lc[j]["wms_info"]["layer"]
+                else:
+                    slug_lc = list_lc[j]["slug"]
+                if atlas_slug in slug_lc:
+                    found = True
+        except:
+            print("Slug is waarschijnlijk een NoneType")
+            found = False
      
         if found:
             found_layers.append(list_atlas[i])
@@ -424,11 +428,11 @@ vector_list_atlas,raster_list_atlas = layers_in_public_themes_atlas(settings.atl
 # Finding raster and vector layers currently in layer collection:
 raster_list_lc = list_slugs_in_lc(True,settings.layer_collection)
 vector_list_lc = list_slugs_in_lc(False,settings.layer_collection)
-
+"""
 # Find out which layers in the layer collection are not configured in public themes in the Atlas
 vector_lc_found_layers, vector_lc_not_found_layers=find_old_layers_in_lc(vector_list_atlas,vector_list_lc,False)
 raster_lc_found_layers, raster_lc_not_found_layers=find_old_layers_in_lc(raster_list_atlas,raster_list_lc,True)
-
+"""
 # Compare the lists to find missing slugs and prompt user for input
 vector_found_layers, vector_not_found_layers = compare_atlas_and_lc(vector_list_atlas,vector_list_lc,False)
 user_input_vector = input("Which vector layers would you like to add to the layer collection? Enter numbers separated by commas.")
