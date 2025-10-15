@@ -24,6 +24,7 @@ import requests
 import numpy as np
 from configparser import RawConfigParser
 import os
+import re
 
 class settings_object(object):
     """Reads settings from inifile settings from command line tool"""
@@ -120,16 +121,16 @@ def make_new_layer_collection():
     else: 
         requests.post(url=layer_collection_url,json=layer_collection_config,headers=json_headers)
 
-def maplayer_exists(name):
+def maplayer_exists(slug):
     wms_url = "https://nens.lizard.net/api/v4/wmslayers/"
-    query_wmslayer = f"?name={name}" 
+    query_wmslayer = f"?slug={slug}" 
     wms_api = wms_url + query_wmslayer
     wms_list = requests.get(wms_api).json()["results"]
     if np.size(wms_list) > 0:
-        print(f"{name} already exists. Therefore, no new layer is created")
+        print(f"{slug} already exists. Therefore, no new layer is created")
         return True
     else:
-        print(f"{name} is created")
+        #print(f"{name} is created")
         return False
     
 def vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer):
@@ -137,9 +138,19 @@ def vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,s
     slug = maplayer["wms_layer_name"].lower()
     name = maplayer["display_name"]
     url = maplayer["layer_url"]
+    
+    #Download URL does not work when it looks like /geoserver/atlas_name/wms
+    #So, You want to extract the part between "geoserver/" and "/wms" from the URL and prepend it to your slug with a colon separator.
+    match = re.search(r"geoserver/([^/]+)/wms", url)
+    if match:
+        prefix = match.group(1)
+        slug = f"{prefix}:{slug}"
+        # Cleaned URL (remove the extra layer path)
+        url = re.sub(r"/[^/]+/wms", "/wms", url)
     download_url = "{}?&request=GetFeature&typeName={}&srsName=epsg:28992&OutputFormat=shape-zip".format(
         url.replace("wms", "wfs"), slug
         )
+
     legend_link = (
         "{}?REQUEST=GetLegendGraphic&VERSION=1.0.0&"
         "FORMAT=image/png&LAYER={}&LEGEND_OPTIONS="
@@ -155,7 +166,7 @@ def vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,s
     }
 
     configuration = {
-        "name": name + " [" + layer_collection_name + "]",
+        "name": name,
         "description": wmslayer_description,
         "slug": slug,
         "tiled": True,
@@ -172,12 +183,19 @@ def vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,s
         "get_feature_info_url": url,
         "get_feature_info": True,
     }
+    
     wms_url = "https://nens.lizard.net/api/v4/wmslayers/"
     
-    if maplayer_exists(configuration["name"]):
+    if maplayer_exists(configuration["slug"]):
         requests.patch(url=wms_url,json = configuration,headers=json_headers)
     else:
-        requests.post(url=wms_url,json = configuration,headers=json_headers)
+        response = requests.post(url=wms_url,json = configuration,headers=json_headers)
+        if response.status_code in (200, 201):
+            print(f"✅ Successfully created WMS layer: {configuration['name']} ({slug})")
+        elif response.status_code == 409:
+            print(f"⚠️ Layer already exists (409 conflict): {slug}")
+        else:
+            print(f"❌ Failed to create {slug}: HTTP {response.status_code} – {response.text}")
     
 def raster_to_layer_collection(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer_name,failed_layers,maplayer_display_name):
     configuration ={"layer_collections": [f"{layer_collection_url}{layer_collection_name}/"],
@@ -208,6 +226,8 @@ def raster_to_layer_collection(layer_collection_url,layer_collection_name,organi
     requests.patch(url=patch_url,json=configuration,headers=json_headers)
 
 def layers_from_atlas_to_lizard(atlas_name,supplier,layer_collection_name,organisation_uuid,failed_layers):
+    # Searching for raster slugs in Lizard Api is not supported anymore. Therefore, configure the layers in the list below manually
+    raster_maplayer = [] 
     #Find Atlas UUID
     query_atlas =f"/?domain__contains={atlas_name}" 
     atlas_api = f"https://{atlas_name}.klimaatatlas.net/api/atlases" + query_atlas
@@ -227,14 +247,15 @@ def layers_from_atlas_to_lizard(atlas_name,supplier,layer_collection_name,organi
         maplayer_url = maplayer["layer_url"]
         maplayer_name = maplayer["wms_layer_name"]
         maplayer_display_name = maplayer["display_name"]
-        print(f"Configuring {maplayer_display_name} from the atlas")
+        #print(f"Configuring {maplayer_display_name} from the atlas")
         if "geoserver" in maplayer_url:
-            print("geoserver laag")
+            #print("geoserver laag")
             vector_to_wms(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer)    
         else: 
-            print("lizard laag")
-            raster_to_layer_collection(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer_name, failed_layers,maplayer_display_name)  
-    return failed_layers
+            #print("lizard laag")
+            #raster_to_layer_collection(layer_collection_url,layer_collection_name,organisation_uuid,supplier,maplayer_name, failed_layers,maplayer_display_name)
+            raster_maplayer.append(maplayer_name)
+    return failed_layers, raster_maplayer
 
 def missing_wms(atlas_name,supplier,layer_collection_name,organisation_uuid,wms_missing,wms_configured,wms_not_in_layer_collection):
     #Find Atlas UUID
@@ -293,14 +314,17 @@ json_headers = {
 
 failed_layers = []
 make_new_layer_collection()
-layers_from_atlas_to_lizard(settings.atlas_name,settings.supplier,settings.layer_collection,settings.organisation_uuid,failed_layers)
+failed_layers, raster_maplayer = layers_from_atlas_to_lizard(settings.atlas_name,settings.supplier,settings.layer_collection,settings.organisation_uuid,failed_layers)
+print("Failed layers:", failed_layers)
+print("Raster map layers:", raster_maplayer)
 
+"""
 #missende WMS-lagen opsporen
 wms_missing =[]
 wms_configured=[]
 wms_not_in_layer_collection=[]                
 missing_wms(settings.atlas_name,settings.supplier,settings.layer_collection,settings.organisation_uuid,wms_missing,wms_configured,wms_not_in_layer_collection)        
-  
+"""  
 
 """
 #DELETE WMS LAGEN wanneer ze opnieuw geconfigureerd moeten worden
